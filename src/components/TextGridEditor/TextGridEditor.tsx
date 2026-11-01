@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useI18n } from '../../hooks/useI18n';
 import { useAudio } from '../../hooks/useAudio';
 import { getPraatWorker, downloadBlob } from '../../utils/audio';
@@ -10,7 +10,10 @@ import {
   setIntervalTextInTier,
 } from '../../utils/textgrid';
 import { WaveformCanvas } from '../SoundEditor/WaveformCanvas';
-import { TextGridTiersCanvas } from './TextGridTiersCanvas';
+import {
+  TextGridTiersCanvas,
+  TEXTGRID_TIER_LABEL_WIDTH_PX,
+} from './TextGridTiersCanvas';
 import { IPAPalette } from './IPAPalette';
 import type {
   TextGridData,
@@ -43,6 +46,24 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
 
   // Active interval text input
   const [activeText, setActiveText] = useState('');
+
+  // Keep waveform & time ruler right-edge aligned if tiers scroll container shows a classic scrollbar
+  const tiersScrollRef = useRef<HTMLDivElement>(null);
+  const [tiersScrollbarWidth, setTiersScrollbarWidth] = useState(0);
+
+  useEffect(() => {
+    const el = tiersScrollRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+
+    const updateScrollbarWidth = () => {
+      setTiersScrollbarWidth(Math.max(0, el.offsetWidth - el.clientWidth));
+    };
+
+    updateScrollbarWidth();
+    const observer = new ResizeObserver(updateScrollbarWidth);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loading, gridData?.tiers.length]);
 
   // Time Viewport & Zoom State
   const duration = sound?.duration || gridData?.xmax || 1.0;
@@ -427,22 +448,37 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
           <>
             {/* Top: Waveform View (if sound is present) */}
             {sound && channels.length > 0 && (
-              <div className="h-44 border-b border-slate-300 relative min-h-0 shrink-0">
-                <WaveformCanvas
-                  channels={channels}
-                  sampleRate={sampleRate}
-                  tmin={tmin}
-                  tmax={tmax}
-                  selection={selection}
-                  playheadTime={playheadTime}
-                  onSelect={handleSelect}
-                  onSeek={handleSeek}
+              <div
+                style={
+                  tiersScrollbarWidth > 0
+                    ? { paddingRight: `${tiersScrollbarWidth}px` }
+                    : undefined
+                }
+                className="h-44 border-b border-slate-300 relative flex min-h-0 shrink-0 bg-slate-100"
+              >
+                {/* Left margin equal to TextGrid tier label column width */}
+                <div
+                  style={{ width: `${TEXTGRID_TIER_LABEL_WIDTH_PX}px` }}
+                  className="shrink-0 h-full border-r border-slate-300 bg-slate-100"
+                  aria-hidden="true"
                 />
+                <div className="flex-1 h-full relative min-w-0 bg-white">
+                  <WaveformCanvas
+                    channels={channels}
+                    sampleRate={sampleRate}
+                    tmin={tmin}
+                    tmax={tmax}
+                    selection={selection}
+                    playheadTime={playheadTime}
+                    onSelect={handleSelect}
+                    onSeek={handleSeek}
+                  />
+                </div>
               </div>
             )}
 
             {/* Bottom: Stacked Tiers directly beneath waveform view */}
-            <div className="flex-1 overflow-y-auto min-h-0 bg-white">
+            <div ref={tiersScrollRef} className="flex-1 overflow-y-auto min-h-0 bg-white">
               {gridData && (
                 <TextGridTiersCanvas
                   textGrid={gridData}
@@ -451,6 +487,7 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
                   selection={selection}
                   selectedTierIndex={selectedTierIndex}
                   selectedIntervalIndex={selectedIntervalIndex}
+                  tierLabelWidthPx={TEXTGRID_TIER_LABEL_WIDTH_PX}
                   onSelectInterval={handleSelectInterval}
                   onAddBoundary={handleAddBoundary}
                   onMoveBoundary={handleMoveBoundary}
@@ -467,10 +504,24 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
       </div>
 
       {/* 4. Bottom Time Ruler */}
-      <div className="h-4 shrink-0 flex items-center justify-between border-t border-slate-300 bg-slate-100 px-2 font-mono text-[10px] text-slate-500">
-        <span>{tmin.toFixed(4)} s</span>
-        <span>{((tmin + tmax) / 2).toFixed(4)} s</span>
-        <span>{tmax.toFixed(4)} s</span>
+      <div
+        style={
+          tiersScrollbarWidth > 0
+            ? { paddingRight: `${tiersScrollbarWidth}px` }
+            : undefined
+        }
+        className="h-4 shrink-0 flex items-center border-t border-slate-300 bg-slate-100 font-mono text-[10px] text-slate-500"
+      >
+        <div
+          style={{ width: `${TEXTGRID_TIER_LABEL_WIDTH_PX}px` }}
+          className="h-full shrink-0 border-r border-slate-300 bg-slate-100"
+          aria-hidden="true"
+        />
+        <div className="flex flex-1 items-center justify-between px-2 min-w-0">
+          <span>{tmin.toFixed(4)} s</span>
+          <span>{((tmin + tmax) / 2).toFixed(4)} s</span>
+          <span>{tmax.toFixed(4)} s</span>
+        </div>
       </div>
 
       {/* 5. Praat Playback & Zoom Bar */}

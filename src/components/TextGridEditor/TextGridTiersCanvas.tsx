@@ -5,6 +5,8 @@ import type {
   PointTier,
 } from '../../types/praat';
 
+export const TEXTGRID_TIER_LABEL_WIDTH_PX = 96;
+
 export interface TextGridTiersCanvasProps {
   textGrid: TextGridData;
   tmin: number;
@@ -12,6 +14,7 @@ export interface TextGridTiersCanvasProps {
   selection: [number, number] | null;
   selectedTierIndex: number;
   selectedIntervalIndex: number | null;
+  tierLabelWidthPx?: number;
   onSelectInterval: (tierIndex: number, intervalIndex: number) => void;
   onAddBoundary: (tierIndex: number, time: number) => void;
   onMoveBoundary: (tierIndex: number, intervalIndex: number, newTime: number) => void;
@@ -29,6 +32,7 @@ export const TextGridTiersCanvas: React.FC<TextGridTiersCanvasProps> = ({
   selection,
   selectedTierIndex,
   selectedIntervalIndex,
+  tierLabelWidthPx = TEXTGRID_TIER_LABEL_WIDTH_PX,
   onSelectInterval,
   onAddBoundary,
   onMoveBoundary,
@@ -74,10 +78,11 @@ export const TextGridTiersCanvas: React.FC<TextGridTiersCanvasProps> = ({
     (clientX: number): number => {
       if (!containerRef.current) return tmin;
       const rect = containerRef.current.getBoundingClientRect();
-      const x = Math.max(0, Math.min(clientX - (rect.left + 96), rect.width - 96));
-      return tmin + (x / Math.max(1, rect.width - 96)) * timeSpan;
+      const trackWidth = Math.max(1, rect.width - tierLabelWidthPx);
+      const x = Math.max(0, Math.min(clientX - (rect.left + tierLabelWidthPx), trackWidth));
+      return tmin + (x / trackWidth) * timeSpan;
     },
-    [tmin, timeSpan]
+    [tmin, timeSpan, tierLabelWidthPx]
   );
 
   // Mouse drag listeners on window for smooth boundary and point movement
@@ -147,7 +152,10 @@ export const TextGridTiersCanvas: React.FC<TextGridTiersCanvasProps> = ({
             style={{ height: `${tierHeight}px` }}
           >
             {/* Left Header Tab (Tier Name & Type) */}
-            <div className="absolute left-0 top-0 bottom-0 z-20 w-24 shrink-0 flex items-center justify-between border-r border-slate-300 bg-slate-100 px-2 text-[11px] font-semibold text-slate-700 shadow-xs">
+            <div
+              style={{ width: `${tierLabelWidthPx}px` }}
+              className="absolute left-0 top-0 bottom-0 z-20 shrink-0 flex items-center justify-between border-r border-slate-300 bg-slate-100 px-2 text-[11px] font-semibold text-slate-700 shadow-xs"
+            >
               <span className="truncate" title={tier.name}>{tier.name}</span>
               <span className="text-[9px] font-normal text-slate-400">
                 {tier.type === 'IntervalTier' ? 'Int' : 'Pt'}
@@ -156,7 +164,8 @@ export const TextGridTiersCanvas: React.FC<TextGridTiersCanvasProps> = ({
 
             {/* Main Interactive Track Area */}
             <div
-              className="relative flex-1 h-full ml-24 overflow-hidden bg-white"
+              style={{ marginLeft: `${tierLabelWidthPx}px` }}
+              className="relative flex-1 h-full overflow-hidden bg-white"
               onClick={(e) => {
                 // If clicking background (not on an interval/point directly)
                 if (e.target === e.currentTarget) {
