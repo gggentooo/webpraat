@@ -2,6 +2,7 @@ import { useAtom, useAtomValue } from 'jotai';
 import {
   activeTabAtom,
   editorSoundIdAtom,
+  editorTextGridIdAtom,
   objectsAtom,
   statusMessageAtom,
   isProcessingAtom,
@@ -12,20 +13,28 @@ import { ObjectsPanel } from './components/ObjectsPanel/ObjectsPanel';
 import { InfoWindow } from './components/InfoWindow/InfoWindow';
 import { ModalDialog } from './components/shared/ModalDialog';
 import { SoundEditor } from './components/SoundEditor/SoundEditor';
+import { TextGridEditor } from './components/TextGridEditor/TextGridEditor';
 
 export default function App() {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useAtom(activeTabAtom);
   const [editorSoundId, setEditorSoundId] = useAtom(editorSoundIdAtom);
+  const [editorTextGridId, setEditorTextGridId] = useAtom(editorTextGridIdAtom);
   const objects = useAtomValue(objectsAtom);
   const statusMessage = useAtomValue(statusMessageAtom);
   const isProcessing = useAtomValue(isProcessingAtom);
 
   const editorSound = objects.find((o) => o.id === editorSoundId);
+  const editorTextGrid = objects.find((o) => o.id === editorTextGridId);
 
   const handleCloseEditor = () => {
     setActiveTab('objects');
     setEditorSoundId(null);
+  };
+
+  const handleCloseTextGridEditor = () => {
+    setActiveTab('objects');
+    setEditorTextGridId(null);
   };
 
   return (
@@ -83,12 +92,44 @@ export default function App() {
                 </button>
               </div>
             )}
+
+            {editorTextGrid && (
+              <div
+                className={`ml-1 flex items-center rounded-t border-t border-x px-3 py-1 ${
+                  activeTab === 'textGridEditor'
+                    ? 'border-slate-300 bg-white text-blue-700 font-semibold'
+                    : 'border-transparent text-slate-600 hover:text-slate-800'
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('textGridEditor')}
+                  className="mr-2"
+                >
+                  {editorTextGrid.name} ({t.editor.textGridEditorTitle})
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCloseTextGridEditor}
+                  title={t.editor.closeEditor}
+                  className="text-slate-400 hover:text-red-600 rounded px-1"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Tab Content Body */}
           <div className="flex-1 overflow-hidden">
             {activeTab === 'soundEditor' && editorSound ? (
               <SoundEditor sound={editorSound} onClose={handleCloseEditor} />
+            ) : activeTab === 'textGridEditor' && editorTextGrid ? (
+              <TextGridEditor
+                sound={editorSound}
+                textGrid={editorTextGrid}
+                onClose={handleCloseTextGridEditor}
+              />
             ) : (
               /* Default Praat Picture Drawing Area */
               <div className="h-full w-full p-4 overflow-auto">

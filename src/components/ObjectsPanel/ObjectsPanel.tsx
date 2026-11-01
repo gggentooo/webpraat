@@ -7,6 +7,7 @@ import {
   infoOutputAtom,
   activeTabAtom,
   editorSoundIdAtom,
+  editorTextGridIdAtom,
   statusMessageAtom,
 } from '../../store';
 import { useI18n } from '../../hooks/useI18n';
@@ -21,6 +22,7 @@ export const ObjectsPanel: React.FC = () => {
   const [, setInfoOutput] = useAtom(infoOutputAtom);
   const [, setActiveTab] = useAtom(activeTabAtom);
   const [, setEditorSoundId] = useAtom(editorSoundIdAtom);
+  const [, setEditorTextGridId] = useAtom(editorTextGridIdAtom);
   const [, setStatusMessage] = useAtom(statusMessageAtom);
 
   const [isDragOver, setIsDragOver] = useState(false);
@@ -33,6 +35,10 @@ export const ObjectsPanel: React.FC = () => {
   const isPitchSelected = singleSelected?.className === 'Pitch';
   const isFormantSelected = singleSelected?.className === 'Formant';
   const isSpectrogramSelected = singleSelected?.className === 'Spectrogram';
+  const isTextGridSelected = singleSelected?.className === 'TextGrid';
+  const soundInPair = selectedObjects.length === 2 ? selectedObjects.find((o) => o.className === 'Sound') : null;
+  const textGridInPair = selectedObjects.length === 2 ? selectedObjects.find((o) => o.className === 'TextGrid') : null;
+  const isSoundAndTextGridSelected = Boolean(soundInPair && textGridInPair);
 
   // Selection handlers
   const handleItemClick = (e: React.MouseEvent, id: PraatId, index: number) => {
@@ -59,6 +65,9 @@ export const ObjectsPanel: React.FC = () => {
     if (obj.className === 'Sound') {
       setEditorSoundId(obj.id);
       setActiveTab('soundEditor');
+    } else if (obj.className === 'TextGrid') {
+      setEditorTextGridId(obj.id);
+      setActiveTab('textGridEditor');
     }
   };
 
@@ -85,21 +94,39 @@ export const ObjectsPanel: React.FC = () => {
     try {
       for (let i = 0; i < files.length; ++i) {
         const file = files[i];
-        const info = await loadAudioFile(worker, file);
-        const newObj: PraatObject = {
-          id: info.id,
-          className: info.className,
-          name: info.name,
-          duration: info.duration,
-          sampleRate: info.sampleRate,
-          numChannels: info.numChannels,
-          numSamples: info.numSamples,
-          createdAt: Date.now(),
-        };
-        setObjects((prev) => [...prev, newObj]);
-        setSelectedIds([info.id]);
+        const fileName = file.name;
+        if (fileName.toLowerCase().endsWith('.textgrid')) {
+          const content = await file.text();
+          const baseName = fileName.replace(/\.textgrid$/i, '');
+          const tgId = await worker.readTextGridFromText(content, baseName);
+          const name = await worker.getObjectName(tgId);
+          const className = await worker.getObjectClass(tgId);
+          const newObj: PraatObject = {
+            id: tgId,
+            className,
+            name: name || baseName,
+            createdAt: Date.now(),
+          };
+          setObjects((prev) => [...prev, newObj]);
+          setSelectedIds([tgId]);
+          setStatusMessage(t.status.textGridLoaded);
+        } else {
+          const info = await loadAudioFile(worker, file);
+          const newObj: PraatObject = {
+            id: info.id,
+            className: info.className,
+            name: info.name,
+            duration: info.duration,
+            sampleRate: info.sampleRate,
+            numChannels: info.numChannels,
+            numSamples: info.numSamples,
+            createdAt: Date.now(),
+          };
+          setObjects((prev) => [...prev, newObj]);
+          setSelectedIds([info.id]);
+          setStatusMessage(t.status.soundLoaded);
+        }
       }
-      setStatusMessage(t.status.soundLoaded);
     } catch (err: any) {
       alert(`Error loading file: ${err?.message || err}`);
     } finally {
@@ -407,6 +434,16 @@ export const ObjectsPanel: React.FC = () => {
                 {t.actions.soundToSpectrogram}
               </button>
 
+              <button
+                type="button"
+                onClick={() =>
+                  setModal({ type: 'soundToTextGrid', objectId: singleSelected.id })
+                }
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
+              >
+                {t.actions.soundToTextGrid}
+              </button>
+
               <div className="my-1 border-t border-slate-200" />
 
               {/* Sound Queries */}
@@ -519,6 +556,39 @@ export const ObjectsPanel: React.FC = () => {
                   alert('Spectrogram editor will be enabled in Phase 4.');
                 }}
                 className="w-full rounded border border-blue-500 bg-blue-50 px-2.5 py-1.5 text-left font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs"
+              >
+                {t.actions.viewAndEdit}
+              </button>
+            </div>
+          )}
+
+          {/* TextGrid Specific Actions */}
+          {isTextGridSelected && (
+            <div className="space-y-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditorTextGridId(singleSelected.id);
+                  setActiveTab('textGridEditor');
+                }}
+                className="w-full rounded border border-blue-500 bg-blue-50 px-2.5 py-1.5 text-left font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs"
+              >
+                {t.actions.viewAndEdit}
+              </button>
+            </div>
+          )}
+
+          {/* Sound + TextGrid Combined Actions */}
+          {isSoundAndTextGridSelected && soundInPair && textGridInPair && (
+            <div className="space-y-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditorSoundId(soundInPair.id);
+                  setEditorTextGridId(textGridInPair.id);
+                  setActiveTab('textGridEditor');
+                }}
+                className="w-full rounded border border-blue-600 bg-blue-600 px-2.5 py-1.5 text-left font-semibold text-white hover:bg-blue-700 active:bg-blue-800 shadow-xs"
               >
                 {t.actions.viewAndEdit}
               </button>

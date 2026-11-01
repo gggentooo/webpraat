@@ -2,6 +2,8 @@
  * WASM Bridge and Worker API interfaces for WebPraat.
  */
 
+import type { TextGridData } from './praat';
+
 export interface SoundInfo {
   id: number;
   name: string;
@@ -139,6 +141,18 @@ export interface PraatWorkerApi {
     }
   ): Promise<SoundAnalysisResult>;
   
+  // TextGrid operations
+  createTextGrid(tmin: number, tmax: number, tierNames?: string, pointTiers?: string, name?: string): Promise<number>;
+  soundToTextGrid(soundId: number, tierNames?: string, pointTiers?: string): Promise<number>;
+  getTextGridData(textgridId: number): Promise<TextGridData>;
+  exportTextGridAsText(textgridId: number): Promise<string>;
+  readTextGridFromText(content: string, name?: string): Promise<number>;
+  textgridInsertBoundary(textgridId: number, tierNumber: number, time: number): Promise<void>;
+  textgridRemoveBoundary(textgridId: number, tierNumber: number, time: number): Promise<void>;
+  textgridSetIntervalText(textgridId: number, tierNumber: number, intervalNumber: number, text: string): Promise<void>;
+  textgridInsertPoint(textgridId: number, tierNumber: number, time: number, mark: string): Promise<void>;
+  textgridSetPointText(textgridId: number, tierNumber: number, pointNumber: number, text: string): Promise<void>;
+
   // Audio export
   exportSoundAsWav(soundId: number): Promise<Uint8Array>;
   

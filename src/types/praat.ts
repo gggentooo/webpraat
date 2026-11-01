@@ -8,7 +8,7 @@ export type PraatId = number;
 
 export interface PraatObject {
   id: PraatId;
-  className: string; // "Sound", "Pitch", "TextGrid", "Formant", "Spectrogram", etc.
+  className: string; // "Sound", "Pitch", "TextGrid", "Formant", "Spectrogram", "Intensity", etc.
   name: string;
   selected?: boolean;
   // Cached metadata for quick UI access
@@ -26,6 +26,7 @@ export interface EditorTab {
   type: EditorTabType;
   title: string;
   objectId?: PraatId;
+  secondaryObjectId?: PraatId; // E.g. TextGrid paired with Sound
 }
 
 export type ModalType =
@@ -35,6 +36,7 @@ export type ModalType =
   | 'soundToPitch'
   | 'soundToFormantBurg'
   | 'soundToSpectrogram'
+  | 'soundToTextGrid'
   | 'soundGetMean'
   | 'pitchGetMean'
   | 'pitchGetValueAtTime'
@@ -46,6 +48,44 @@ export interface ModalState {
   initialValues?: Record<string, any>;
 }
 
+// TextGrid Data Structures
+export interface TextInterval {
+  id?: string;
+  xmin: number;
+  xmax: number;
+  text: string;
+}
+
+export interface TextPoint {
+  id?: string;
+  time: number;
+  mark: string;
+}
+
+export interface IntervalTier {
+  type: 'IntervalTier';
+  name: string;
+  xmin: number;
+  xmax: number;
+  intervals: TextInterval[];
+}
+
+export interface PointTier {
+  type: 'TextTier';
+  name: string;
+  xmin: number;
+  xmax: number;
+  points: TextPoint[];
+}
+
+export type TextGridTier = IntervalTier | PointTier;
+
+export interface TextGridData {
+  xmin: number;
+  xmax: number;
+  tiers: TextGridTier[];
+}
+
 export interface AppState {
   objects: PraatObject[];
   selectedIds: PraatId[];
@@ -53,5 +93,6 @@ export interface AppState {
   locale: SupportedLocale;
   activeTab: EditorTabType;
   editorSoundId: PraatId | null;
+  editorTextGridId: PraatId | null;
   modal: ModalState | null;
 }

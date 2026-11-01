@@ -6,6 +6,7 @@ import {
   modalAtom,
   infoOutputAtom,
   singleSelectedSoundAtom,
+  singleSelectedTextGridAtom,
   statusMessageAtom,
   isProcessingAtom,
 } from '../../store';
@@ -21,6 +22,7 @@ export const MenuBar: React.FC = () => {
   const [statusMessage, setStatusMessage] = useAtom(statusMessageAtom);
   const isProcessing = useAtomValue(isProcessingAtom);
   const selectedSound = useAtomValue(singleSelectedSoundAtom);
+  const selectedTextGrid = useAtomValue(singleSelectedTextGridAtom);
 
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -51,23 +53,40 @@ export const MenuBar: React.FC = () => {
     try {
       for (let i = 0; i < files.length; ++i) {
         const file = files[i];
-        const info = await loadAudioFile(worker, file);
-        const newObj = {
-          id: info.id,
-          className: info.className,
-          name: info.name,
-          duration: info.duration,
-          sampleRate: info.sampleRate,
-          numChannels: info.numChannels,
-          numSamples: info.numSamples,
-          createdAt: Date.now(),
-        };
-        setObjects((prev) => [...prev, newObj]);
-        setSelectedIds([info.id]);
+        if (file.name.toLowerCase().endsWith('.textgrid')) {
+          const content = await file.text();
+          const baseName = file.name.replace(/\.textgrid$/i, '');
+          const tgId = await worker.readTextGridFromText(content, baseName);
+          const name = await worker.getObjectName(tgId);
+          const className = await worker.getObjectClass(tgId);
+          const newObj = {
+            id: tgId,
+            className,
+            name: name || baseName,
+            createdAt: Date.now(),
+          };
+          setObjects((prev) => [...prev, newObj]);
+          setSelectedIds([tgId]);
+          setStatusMessage(t.status.textGridLoaded);
+        } else {
+          const info = await loadAudioFile(worker, file);
+          const newObj = {
+            id: info.id,
+            className: info.className,
+            name: info.name,
+            duration: info.duration,
+            sampleRate: info.sampleRate,
+            numChannels: info.numChannels,
+            numSamples: info.numSamples,
+            createdAt: Date.now(),
+          };
+          setObjects((prev) => [...prev, newObj]);
+          setSelectedIds([info.id]);
+          setStatusMessage(t.status.soundLoaded);
+        }
       }
-      setStatusMessage(t.status.soundLoaded);
     } catch (err: any) {
-      alert(`Error opening audio file: ${err?.message || err}`);
+      alert(`Error opening file: ${err?.message || err}`);
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = '';
       setTimeout(() => setStatusMessage(''), 3000);
@@ -85,6 +104,18 @@ export const MenuBar: React.FC = () => {
     }
   };
 
+  const handleSaveTextGrid = async () => {
+    if (!selectedTextGrid) return;
+    try {
+      const worker = getPraatWorker();
+      const text = await worker.exportTextGridAsText(selectedTextGrid.id);
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      downloadBlob(blob, `${selectedTextGrid.name}.TextGrid`);
+    } catch (err: any) {
+      alert(`Error saving TextGrid file: ${err?.message || err}`);
+    }
+  };
+
   return (
     <div
       ref={menuBarRef}
@@ -95,7 +126,7 @@ export const MenuBar: React.FC = () => {
         ref={fileInputRef}
         type="file"
         multiple
-        accept="audio/*,.wav,.mp3,.flac,.ogg,.aiff"
+        accept="audio/*,.wav,.mp3,.flac,.ogg,.aiff,.TextGrid,.textgrid"
         className="hidden"
         onChange={handleFileChange}
       />
@@ -237,6 +268,21 @@ export const MenuBar: React.FC = () => {
                 }}
               >
                 {t.commands.saveAsWavFile}
+              </button>
+              <button
+                type="button"
+                disabled={!selectedTextGrid}
+                className={`w-full px-3 py-1 text-left ${
+                  selectedTextGrid
+                    ? 'hover:bg-blue-600 hover:text-white'
+                    : 'text-slate-400 cursor-not-allowed'
+                }`}
+                onClick={() => {
+                  setActiveMenu(null);
+                  handleSaveTextGrid();
+                }}
+              >
+                {t.commands.saveAsTextGridFile}
               </button>
             </div>
           )}

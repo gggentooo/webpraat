@@ -5,6 +5,7 @@
  */
 
 import * as Comlink from 'comlink';
+import type { TextGridData } from '../types/praat';
 import type {
   PraatWorkerApi,
   SoundInfo,
@@ -52,6 +53,16 @@ let praat_bridge_intensity_get_info: (id: number, out_info: number) => number;
 let praat_bridge_intensity_get_frames: (id: number, out_values: number) => number;
 let praat_bridge_pitch_get_mean: (id: number, tmin: number, tmax: number) => number;
 let praat_bridge_pitch_get_value_at_time: (id: number, time: number) => number;
+let praat_bridge_create_textgrid: (tmin: number, tmax: number, tier_names: string, point_tiers: string, name: string) => number;
+let praat_bridge_sound_to_textgrid: (sound_id: number, tier_names: string, point_tiers: string) => number;
+let praat_bridge_textgrid_to_json: (id: number) => string;
+let praat_bridge_textgrid_save_to_file: (id: number, path: string) => number;
+let praat_bridge_textgrid_read_from_file: (path: string, name: string) => number;
+let praat_bridge_textgrid_insert_boundary: (id: number, tier_num: number, time: number) => number;
+let praat_bridge_textgrid_remove_boundary_at_time: (id: number, tier_num: number, time: number) => number;
+let praat_bridge_textgrid_set_interval_text: (id: number, tier_num: number, interval_num: number, text: string) => number;
+let praat_bridge_textgrid_insert_point: (id: number, tier_num: number, time: number, mark: string) => number;
+let praat_bridge_textgrid_set_point_text: (id: number, tier_num: number, point_num: number, text: string) => number;
 let praat_bridge_execute_script: (text: string) => string;
 let praat_bridge_get_info_output: () => string;
 
@@ -97,6 +108,16 @@ async function ensureInit(): Promise<boolean> {
   praat_bridge_intensity_get_frames = Module.cwrap('praat_bridge_intensity_get_frames', 'number', ['number', 'number']);
   praat_bridge_pitch_get_mean = Module.cwrap('praat_bridge_pitch_get_mean', 'number', ['number', 'number', 'number']);
   praat_bridge_pitch_get_value_at_time = Module.cwrap('praat_bridge_pitch_get_value_at_time', 'number', ['number', 'number']);
+  praat_bridge_create_textgrid = Module.cwrap('praat_bridge_create_textgrid', 'number', ['number', 'number', 'string', 'string', 'string']);
+  praat_bridge_sound_to_textgrid = Module.cwrap('praat_bridge_sound_to_textgrid', 'number', ['number', 'string', 'string']);
+  praat_bridge_textgrid_to_json = Module.cwrap('praat_bridge_textgrid_to_json', 'string', ['number']);
+  praat_bridge_textgrid_save_to_file = Module.cwrap('praat_bridge_textgrid_save_to_file', 'number', ['number', 'string']);
+  praat_bridge_textgrid_read_from_file = Module.cwrap('praat_bridge_textgrid_read_from_file', 'number', ['string', 'string']);
+  praat_bridge_textgrid_insert_boundary = Module.cwrap('praat_bridge_textgrid_insert_boundary', 'number', ['number', 'number', 'number']);
+  praat_bridge_textgrid_remove_boundary_at_time = Module.cwrap('praat_bridge_textgrid_remove_boundary_at_time', 'number', ['number', 'number', 'number']);
+  praat_bridge_textgrid_set_interval_text = Module.cwrap('praat_bridge_textgrid_set_interval_text', 'number', ['number', 'number', 'number', 'string']);
+  praat_bridge_textgrid_insert_point = Module.cwrap('praat_bridge_textgrid_insert_point', 'number', ['number', 'number', 'number', 'string']);
+  praat_bridge_textgrid_set_point_text = Module.cwrap('praat_bridge_textgrid_set_point_text', 'number', ['number', 'number', 'number', 'string']);
   praat_bridge_execute_script = Module.cwrap('praat_bridge_execute_script', 'string', ['string']);
   praat_bridge_get_info_output = Module.cwrap('praat_bridge_get_info_output', 'string', []);
 
@@ -441,6 +462,82 @@ export const praatWorkerApi: PraatWorkerApi = {
   async pitchGetValueAtTime(pitchId: number, time: number): Promise<number> {
     await ensureInit();
     return praat_bridge_pitch_get_value_at_time(pitchId, time);
+  },
+
+  async createTextGrid(tmin: number, tmax: number, tierNames?: string, pointTiers?: string, name?: string): Promise<number> {
+    await ensureInit();
+    const id = praat_bridge_create_textgrid(tmin, tmax, tierNames ?? '', pointTiers ?? '', name ?? 'grid');
+    if (id <= 0) throw new Error('Failed to create TextGrid object');
+    return id;
+  },
+
+  async soundToTextGrid(soundId: number, tierNames?: string, pointTiers?: string): Promise<number> {
+    await ensureInit();
+    const id = praat_bridge_sound_to_textgrid(soundId, tierNames ?? 'sentence', pointTiers ?? '');
+    if (id <= 0) throw new Error(`Failed to create TextGrid from Sound ${soundId}`);
+    return id;
+  },
+
+  async getTextGridData(textgridId: number): Promise<TextGridData> {
+    await ensureInit();
+    const jsonStr = praat_bridge_textgrid_to_json(textgridId);
+    if (!jsonStr || jsonStr === '{}') throw new Error(`Failed to read TextGrid data for ID ${textgridId}`);
+    return JSON.parse(jsonStr) as TextGridData;
+  },
+
+  async exportTextGridAsText(textgridId: number): Promise<string> {
+    await ensureInit();
+    const tempPath = `/tmp/export_tg_${textgridId}_${Date.now()}.TextGrid`;
+    const ok = praat_bridge_textgrid_save_to_file(textgridId, tempPath);
+    if (!ok) throw new Error(`Failed to export TextGrid ${textgridId} to file`);
+    try {
+      return Module.FS.readFile(tempPath, { encoding: 'utf8' });
+    } finally {
+      try { Module.FS.unlink(tempPath); } catch {}
+    }
+  },
+
+  async readTextGridFromText(content: string, name?: string): Promise<number> {
+    await ensureInit();
+    const tempPath = `/tmp/import_tg_${Date.now()}.TextGrid`;
+    Module.FS.writeFile(tempPath, content);
+    try {
+      const id = praat_bridge_textgrid_read_from_file(tempPath, name ?? 'imported_grid');
+      if (id <= 0) throw new Error('Failed to parse and import TextGrid file');
+      return id;
+    } finally {
+      try { Module.FS.unlink(tempPath); } catch {}
+    }
+  },
+
+  async textgridInsertBoundary(textgridId: number, tierNumber: number, time: number): Promise<void> {
+    await ensureInit();
+    const ok = praat_bridge_textgrid_insert_boundary(textgridId, tierNumber, time);
+    if (!ok) throw new Error(`Failed to insert boundary at ${time}s in tier ${tierNumber}`);
+  },
+
+  async textgridRemoveBoundary(textgridId: number, tierNumber: number, time: number): Promise<void> {
+    await ensureInit();
+    const ok = praat_bridge_textgrid_remove_boundary_at_time(textgridId, tierNumber, time);
+    if (!ok) throw new Error(`Failed to remove boundary at ${time}s in tier ${tierNumber}`);
+  },
+
+  async textgridSetIntervalText(textgridId: number, tierNumber: number, intervalNumber: number, text: string): Promise<void> {
+    await ensureInit();
+    const ok = praat_bridge_textgrid_set_interval_text(textgridId, tierNumber, intervalNumber, text);
+    if (!ok) throw new Error(`Failed to set interval text on tier ${tierNumber}, interval ${intervalNumber}`);
+  },
+
+  async textgridInsertPoint(textgridId: number, tierNumber: number, time: number, mark: string): Promise<void> {
+    await ensureInit();
+    const ok = praat_bridge_textgrid_insert_point(textgridId, tierNumber, time, mark);
+    if (!ok) throw new Error(`Failed to insert point at ${time}s in tier ${tierNumber}`);
+  },
+
+  async textgridSetPointText(textgridId: number, tierNumber: number, pointNumber: number, text: string): Promise<void> {
+    await ensureInit();
+    const ok = praat_bridge_textgrid_set_point_text(textgridId, tierNumber, pointNumber, text);
+    if (!ok) throw new Error(`Failed to set point text on tier ${tierNumber}, point ${pointNumber}`);
   },
 
   async exportSoundAsWav(soundId: number): Promise<Uint8Array> {

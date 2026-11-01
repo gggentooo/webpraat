@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include <string>
+#include <sstream>
 
 // Praat core headers
 #include "praat.h"
@@ -12,6 +13,8 @@
 #include "Formant.h"
 #include "Spectrogram.h"
 #include "Intensity.h"
+#include "TextGrid.h"
+#include "Data.h"
 #include "Sound_to_Pitch.h"
 #include "Sound_to_Formant.h"
 #include "Sound_and_Spectrogram.h"
@@ -35,7 +38,10 @@ int praat_bridge_init(void) {
             classPitch,
             classFormant,
             classSpectrogram,
-            classIntensity
+            classIntensity,
+            classTextGrid,
+            classIntervalTier,
+            classTextTier
         );
 
         s_initialized = true;
@@ -459,6 +465,235 @@ double praat_bridge_pitch_get_value_at_time(int pitch_id, double time) {
     } catch (MelderError) {
         Melder_clearError();
         return 0.0;
+    }
+}
+
+int praat_bridge_create_textgrid(double tmin, double tmax, const char* tier_names, const char* point_tiers, const char* name) {
+    if (tmax <= tmin) return 0;
+    try {
+        autostring32 tierNames32 = Melder_8to32_e(tier_names ? tier_names : "");
+        autostring32 pointTiers32 = Melder_8to32_e(point_tiers ? point_tiers : "");
+        autoTextGrid grid = TextGrid_create(tmin, tmax, tierNames32.get(), pointTiers32.get());
+        if (!grid) return 0;
+
+        if (name && name[0] != '\0') {
+            Thing_setName(grid.get(), Melder_8to32_e(name).get());
+        } else {
+            Thing_setName(grid.get(), U"grid");
+        }
+
+        int id = g_nextId++;
+        g_objectTable[id] = grid.move();
+        return id;
+    } catch (MelderError) {
+        Melder_clearError();
+        return 0;
+    }
+}
+
+int praat_bridge_sound_to_textgrid(int sound_id, const char* tier_names, const char* point_tiers) {
+    auto it = g_objectTable.find(sound_id);
+    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classSound)) return 0;
+    Sound sound = (Sound)it->second.get();
+
+    try {
+        autostring32 tierNames32 = Melder_8to32_e(tier_names ? tier_names : "sentence");
+        autostring32 pointTiers32 = Melder_8to32_e(point_tiers ? point_tiers : "");
+        autoTextGrid grid = TextGrid_create(sound->xmin, sound->xmax, tierNames32.get(), pointTiers32.get());
+        if (!grid) return 0;
+
+        Thing_setName(grid.get(), Melder_cat(Thing_getName(sound), U"_grid"));
+
+        int id = g_nextId++;
+        g_objectTable[id] = grid.move();
+        return id;
+    } catch (MelderError) {
+        Melder_clearError();
+        return 0;
+    }
+}
+
+const char* praat_bridge_textgrid_to_json(int textgrid_id) {
+    static std::string s_json;
+    auto it = g_objectTable.find(textgrid_id);
+    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classTextGrid)) return "{}";
+    TextGrid grid = (TextGrid)it->second.get();
+
+    std::ostringstream ss;
+    ss << "{\"xmin\":" << grid->xmin << ",\"xmax\":" << grid->xmax << ",\"tiers\":[";
+
+    integer nTiers = grid->tiers ? grid->tiers->size : 0;
+    for (integer itier = 1; itier <= nTiers; ++itier) {
+        Function tier = (Function)grid->tiers->at[itier];
+        if (itier > 1) ss << ",";
+        const char* tierName = tier->name ? Melder_peek32to8(tier->name.get()) : "";
+        if (Thing_isa(tier, classIntervalTier)) {
+            IntervalTier it = (IntervalTier)tier;
+            ss << "{\"type\":\"IntervalTier\",\"name\":\"";
+            for (const char* p = tierName; *p; ++p) {
+                if (*p == '"') ss << "\\\"";
+                else if (*p == '\\') ss << "\\\\";
+                else ss << *p;
+            }
+            ss << "\",\"xmin\":" << it->xmin << ",\"xmax\":" << it->xmax << ",\"intervals\":[";
+            integer nInt = it->intervals.size;
+            for (integer j = 1; j <= nInt; ++j) {
+                if (j > 1) ss << ",";
+                TextInterval interval = it->intervals.at[j];
+                const char* txt = interval->text ? Melder_peek32to8(interval->text.get()) : "";
+                ss << "{\"xmin\":" << interval->xmin << ",\"xmax\":" << interval->xmax << ",\"text\":\"";
+                for (const char* p = txt; *p; ++p) {
+                    if (*p == '"') ss << "\\\"";
+                    else if (*p == '\\') ss << "\\\\";
+                    else if (*p == '\n') ss << "\\n";
+                    else if (*p == '\r') ss << "\\r";
+                    else if (*p == '\t') ss << "\\t";
+                    else ss << *p;
+                }
+                ss << "\"}";
+            }
+            ss << "]}";
+        } else if (Thing_isa(tier, classTextTier)) {
+            TextTier pt = (TextTier)tier;
+            ss << "{\"type\":\"TextTier\",\"name\":\"";
+            for (const char* p = tierName; *p; ++p) {
+                if (*p == '"') ss << "\\\"";
+                else if (*p == '\\') ss << "\\\\";
+                else ss << *p;
+            }
+            ss << "\",\"xmin\":" << pt->xmin << ",\"xmax\":" << pt->xmax << ",\"points\":[";
+            integer nPts = pt->points.size;
+            for (integer j = 1; j <= nPts; ++j) {
+                if (j > 1) ss << ",";
+                TextPoint point = pt->points.at[j];
+                const char* txt = point->mark ? Melder_peek32to8(point->mark.get()) : "";
+                ss << "{\"time\":" << point->number << ",\"mark\":\"";
+                for (const char* p = txt; *p; ++p) {
+                    if (*p == '"') ss << "\\\"";
+                    else if (*p == '\\') ss << "\\\\";
+                    else if (*p == '\n') ss << "\\n";
+                    else if (*p == '\r') ss << "\\r";
+                    else if (*p == '\t') ss << "\\t";
+                    else ss << *p;
+                }
+                ss << "\"}";
+            }
+            ss << "]}";
+        }
+    }
+    ss << "]}";
+    s_json = ss.str();
+    return s_json.c_str();
+}
+
+int praat_bridge_textgrid_save_to_file(int textgrid_id, const char* path) {
+    if (!path || path[0] == '\0') return 0;
+    auto it = g_objectTable.find(textgrid_id);
+    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classTextGrid)) return 0;
+    TextGrid grid = (TextGrid)it->second.get();
+
+    try {
+        structMelderFile file;
+        Melder_pathToFile(Melder_8to32_e(path).get(), &file);
+        Data_writeToTextFile((Daata)grid, &file);
+        return 1;
+    } catch (MelderError) {
+        Melder_clearError();
+        return 0;
+    }
+}
+
+int praat_bridge_textgrid_read_from_file(const char* path, const char* name) {
+    if (!path || path[0] == '\0') return 0;
+    try {
+        structMelderFile file;
+        Melder_pathToFile(Melder_8to32_e(path).get(), &file);
+        autoDaata obj = Data_readFromTextFile(&file);
+        if (!obj || !Thing_isa(obj.get(), classTextGrid)) {
+            obj = Data_readFromFile(&file);
+            if (!obj || !Thing_isa(obj.get(), classTextGrid)) return 0;
+        }
+
+        if (name && name[0] != '\0') {
+            Thing_setName(obj.get(), Melder_8to32_e(name).get());
+        }
+
+        int id = g_nextId++;
+        g_objectTable[id] = obj.move();
+        return id;
+    } catch (MelderError) {
+        Melder_clearError();
+        return 0;
+    }
+}
+
+int praat_bridge_textgrid_insert_boundary(int textgrid_id, int tier_number, double time) {
+    auto it = g_objectTable.find(textgrid_id);
+    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classTextGrid)) return 0;
+    TextGrid grid = (TextGrid)it->second.get();
+
+    try {
+        TextGrid_insertBoundary(grid, tier_number, time);
+        return 1;
+    } catch (MelderError) {
+        Melder_clearError();
+        return 0;
+    }
+}
+
+int praat_bridge_textgrid_remove_boundary_at_time(int textgrid_id, int tier_number, double time) {
+    auto it = g_objectTable.find(textgrid_id);
+    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classTextGrid)) return 0;
+    TextGrid grid = (TextGrid)it->second.get();
+
+    try {
+        TextGrid_removeBoundaryAtTime(grid, tier_number, time);
+        return 1;
+    } catch (MelderError) {
+        Melder_clearError();
+        return 0;
+    }
+}
+
+int praat_bridge_textgrid_set_interval_text(int textgrid_id, int tier_number, int interval_number, const char* text) {
+    auto it = g_objectTable.find(textgrid_id);
+    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classTextGrid)) return 0;
+    TextGrid grid = (TextGrid)it->second.get();
+
+    try {
+        TextGrid_setIntervalText(grid, tier_number, interval_number, Melder_8to32_e(text ? text : "").get());
+        return 1;
+    } catch (MelderError) {
+        Melder_clearError();
+        return 0;
+    }
+}
+
+int praat_bridge_textgrid_insert_point(int textgrid_id, int tier_number, double time, const char* mark) {
+    auto it = g_objectTable.find(textgrid_id);
+    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classTextGrid)) return 0;
+    TextGrid grid = (TextGrid)it->second.get();
+
+    try {
+        TextGrid_insertPoint(grid, tier_number, time, Melder_8to32_e(mark ? mark : "").get());
+        return 1;
+    } catch (MelderError) {
+        Melder_clearError();
+        return 0;
+    }
+}
+
+int praat_bridge_textgrid_set_point_text(int textgrid_id, int tier_number, int point_number, const char* text) {
+    auto it = g_objectTable.find(textgrid_id);
+    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classTextGrid)) return 0;
+    TextGrid grid = (TextGrid)it->second.get();
+
+    try {
+        TextGrid_setPointText(grid, tier_number, point_number, Melder_8to32_e(text ? text : "").get());
+        return 1;
+    } catch (MelderError) {
+        Melder_clearError();
+        return 0;
     }
 }
 

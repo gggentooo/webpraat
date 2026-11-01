@@ -45,6 +45,7 @@ export const ko: LocaleDictionary = {
     
     // Save menu
     saveAsWavFile: 'WAV 파일로 저장...',
+    saveAsTextGridFile: 'TextGrid 파일로 저장...',
     saveSelected: '선택한 객체 저장...',
     
     // Help menu
@@ -101,6 +102,9 @@ export const ko: LocaleDictionary = {
     // Spectrogram Actions
     paint: '스펙트로그램 그리기...',
     toSpectrumSlice: '스펙트럼 슬라이스 생성...',
+
+    // TextGrid Actions
+    exportTextGrid: 'TextGrid 내보내기...',
   },
 
   // Dialogs & Forms
@@ -146,6 +150,11 @@ export const ko: LocaleDictionary = {
     maxFrequency: '최대 주파수 (Hz)',
     frequencyStep: '주파수 간격 (Hz)',
     windowShape: '윈도우 모양 (Window shape)',
+
+    // Sound: To TextGrid Dialog
+    soundToTextGridTitle: 'Sound: TextGrid 생성',
+    tierNames: '모든 티어(Tier) 이름',
+    pointTiers: '포인트(Point) 티어 지정',
     
     // Range queries
     soundGetMeanTitle: 'Sound: 평균값 조회',
@@ -186,6 +195,8 @@ export const ko: LocaleDictionary = {
     pitchCalculated: '피치(Pitch) 윤곽선이 추출되었습니다.',
     formantCalculated: '포먼트(Formants)가 추출되었습니다.',
     spectrogramCalculated: '스펙트로그램이 생성되었습니다.',
+    textGridCreated: 'TextGrid가 생성되었습니다.',
+    textGridLoaded: 'TextGrid 파일을 성공적으로 불러왔습니다.',
     objectRemoved: '객체가 제거되었습니다.',
     noSelection: '선택된 객체가 없습니다.',
     dragDropPrompt: '오디오 파일을 여기에 끌어다 놓거나 [열기] -> [파일에서 읽기...] 메뉴를 사용하세요.',

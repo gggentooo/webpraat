@@ -14,6 +14,7 @@ export const infoOutputAtom = atom<string>('');
 export const localeAtom = atom<SupportedLocale>(defaultLocale);
 export const activeTabAtom = atom<EditorTabType>('objects');
 export const editorSoundIdAtom = atom<PraatId | null>(null);
+export const editorTextGridIdAtom = atom<PraatId | null>(null);
 export const modalAtom = atom<ModalState | null>(null);
 export const isProcessingAtom = atom<boolean>(false);
 export const statusMessageAtom = atom<string>('');
@@ -48,6 +49,22 @@ export const singleSelectedFormantAtom = atom((get) => {
 export const singleSelectedSpectrogramAtom = atom((get) => {
   const single = get(singleSelectedObjectAtom);
   return single && single.className === 'Spectrogram' ? single : null;
+});
+
+export const singleSelectedTextGridAtom = atom((get) => {
+  const single = get(singleSelectedObjectAtom);
+  return single && single.className === 'TextGrid' ? single : null;
+});
+
+export const soundAndTextGridSelectedAtom = atom((get) => {
+  const selected = get(selectedObjectsAtom);
+  if (selected.length !== 2) return null;
+  const sound = selected.find((o) => o.className === 'Sound');
+  const textGrid = selected.find((o) => o.className === 'TextGrid');
+  if (sound && textGrid) {
+    return { sound, textGrid };
+  }
+  return null;
 });
 
 // Translation Derived Atom

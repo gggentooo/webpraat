@@ -43,6 +43,7 @@ export const en = {
     
     // Save menu
     saveAsWavFile: 'Save as WAV file...',
+    saveAsTextGridFile: 'Save as TextGrid file...',
     saveSelected: 'Save selected...',
     
     // Help menu
@@ -99,6 +100,9 @@ export const en = {
     // Spectrogram Actions
     paint: 'Paint...',
     toSpectrumSlice: 'To Spectrum (slice)...',
+
+    // TextGrid Actions
+    exportTextGrid: 'Export .TextGrid',
   },
 
   // Dialogs & Forms
@@ -144,6 +148,11 @@ export const en = {
     maxFrequency: 'Maximum frequency (Hz)',
     frequencyStep: 'Frequency step (Hz)',
     windowShape: 'Window shape',
+
+    // Sound: To TextGrid Dialog
+    soundToTextGridTitle: 'Sound: To TextGrid',
+    tierNames: 'All tier names',
+    pointTiers: 'Which of these are point tiers?',
     
     // Range queries
     soundGetMeanTitle: 'Sound: Get mean',
@@ -184,6 +193,8 @@ export const en = {
     pitchCalculated: 'Pitch contour extracted',
     formantCalculated: 'Formants extracted',
     spectrogramCalculated: 'Spectrogram calculated',
+    textGridCreated: 'TextGrid created',
+    textGridLoaded: 'TextGrid loaded from file',
     objectRemoved: 'Object removed',
     noSelection: 'No object selected.',
     dragDropPrompt: 'Drag and drop audio files here, or use Open -> Read from file...',

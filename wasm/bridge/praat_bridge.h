@@ -42,6 +42,18 @@ int         praat_bridge_intensity_get_frames(int intensity_id, double* out_valu
 double      praat_bridge_pitch_get_mean(int pitch_id, double tmin, double tmax);
 double      praat_bridge_pitch_get_value_at_time(int pitch_id, double time);
 
+// TextGrid annotation & I/O
+int         praat_bridge_create_textgrid(double tmin, double tmax, const char* tier_names, const char* point_tiers, const char* name);
+int         praat_bridge_sound_to_textgrid(int sound_id, const char* tier_names, const char* point_tiers);
+const char* praat_bridge_textgrid_to_json(int textgrid_id);
+int         praat_bridge_textgrid_save_to_file(int textgrid_id, const char* path);
+int         praat_bridge_textgrid_read_from_file(const char* path, const char* name);
+int         praat_bridge_textgrid_insert_boundary(int textgrid_id, int tier_number, double time);
+int         praat_bridge_textgrid_remove_boundary_at_time(int textgrid_id, int tier_number, double time);
+int         praat_bridge_textgrid_set_interval_text(int textgrid_id, int tier_number, int interval_number, const char* text);
+int         praat_bridge_textgrid_insert_point(int textgrid_id, int tier_number, double time, const char* mark);
+int         praat_bridge_textgrid_set_point_text(int textgrid_id, int tier_number, int point_number, const char* text);
+
 // Scripting & Console output
 const char* praat_bridge_execute_script(const char* script_text);
 const char* praat_bridge_get_info_output(void);

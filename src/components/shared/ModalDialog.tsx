@@ -64,6 +64,12 @@ export const ModalDialog: React.FC = () => {
           windowShape: 0,
         });
         break;
+      case 'soundToTextGrid':
+        setFields({
+          tierNames: 'sentence',
+          pointTiers: '',
+        });
+        break;
       case 'soundGetMean':
         setFields({
           fromTime: 0.0,
@@ -119,6 +125,9 @@ export const ModalDialog: React.FC = () => {
         break;
       case 'soundToSpectrogram':
         setFields({ windowLength: 0.005, maxFrequency: 5000.0, timeStep: 0.002, windowShape: 0 });
+        break;
+      case 'soundToTextGrid':
+        setFields({ tierNames: 'sentence', pointTiers: '' });
         break;
       case 'soundGetMean':
       case 'pitchGetMean':
@@ -275,6 +284,29 @@ export const ModalDialog: React.FC = () => {
           break;
         }
 
+        case 'soundToTextGrid': {
+          if (objId) {
+            const soundObj = objects.find((o) => o.id === objId);
+            const gridId = await worker.soundToTextGrid(
+              objId,
+              fields.tierNames || 'sentence',
+              fields.pointTiers || ''
+            );
+            const name = await worker.getObjectName(gridId);
+            const className = await worker.getObjectClass(gridId);
+            const newObj = {
+              id: gridId,
+              className,
+              name: name || (soundObj ? soundObj.name : 'grid'),
+              duration: soundObj?.duration,
+              createdAt: Date.now(),
+            };
+            setObjects((prev) => [...prev, newObj]);
+            setSelectedIds([gridId]);
+          }
+          break;
+        }
+
         case 'soundGetMean': {
           if (objId) {
             const channel = Number(fields.channel) > 0 ? Number(fields.channel) : 1;
@@ -332,6 +364,8 @@ export const ModalDialog: React.FC = () => {
         return t.dialogs.soundToFormantTitle;
       case 'soundToSpectrogram':
         return t.dialogs.soundToSpectrogramTitle;
+      case 'soundToTextGrid':
+        return t.dialogs.soundToTextGridTitle;
       case 'soundGetMean':
         return t.dialogs.soundGetMeanTitle;
       case 'pitchGetMean':
@@ -623,6 +657,35 @@ export const ModalDialog: React.FC = () => {
                     value={fields.timeStep ?? 0.002}
                     onChange={(e) => handleFieldChange('timeStep', e.target.value)}
                     className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-xs"
+                  />
+                </div>
+              </div>
+            )}
+
+            {modal.type === 'soundToTextGrid' && (
+              <div className="space-y-2">
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-0.5">
+                    {t.dialogs.tierNames}
+                  </label>
+                  <input
+                    type="text"
+                    value={fields.tierNames ?? 'sentence'}
+                    onChange={(e) => handleFieldChange('tierNames', e.target.value)}
+                    className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-xs"
+                    placeholder="e.g. sentence words phonemes"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-0.5">
+                    {t.dialogs.pointTiers}
+                  </label>
+                  <input
+                    type="text"
+                    value={fields.pointTiers ?? ''}
+                    onChange={(e) => handleFieldChange('pointTiers', e.target.value)}
+                    className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-xs"
+                    placeholder="e.g. events landmarks"
                   />
                 </div>
               </div>
