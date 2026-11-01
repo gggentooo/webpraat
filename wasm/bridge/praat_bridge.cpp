@@ -11,9 +11,11 @@
 #include "Pitch.h"
 #include "Formant.h"
 #include "Spectrogram.h"
+#include "Intensity.h"
 #include "Sound_to_Pitch.h"
 #include "Sound_to_Formant.h"
 #include "Sound_and_Spectrogram.h"
+#include "Sound_to_Intensity.h"
 #include "melder_audiofiles.h"
 
 // Object table store
@@ -32,7 +34,8 @@ int praat_bridge_init(void) {
             classSound,
             classPitch,
             classFormant,
-            classSpectrogram
+            classSpectrogram,
+            classIntensity
         );
 
         s_initialized = true;
@@ -283,6 +286,154 @@ int praat_bridge_sound_to_spectrogram(int sound_id, double window_length, double
         Melder_clearError();
         return 0;
     }
+}
+
+int praat_bridge_sound_to_intensity(int sound_id, double pitch_floor, double time_step, int subtract_mean) {
+    auto it = g_objectTable.find(sound_id);
+    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classSound)) return 0;
+    Sound sound = (Sound)it->second.get();
+
+    if (pitch_floor <= 0.0) pitch_floor = 100.0;
+    try {
+        autoIntensity intensity = Sound_to_Intensity(sound, pitch_floor, time_step, subtract_mean != 0);
+        if (!intensity) return 0;
+
+        Thing_setName(intensity.get(), Melder_cat(Thing_getName(sound), U"_intensity"));
+
+        int id = g_nextId++;
+        g_objectTable[id] = intensity.move();
+        return id;
+    } catch (MelderError) {
+        Melder_clearError();
+        return 0;
+    }
+}
+
+int praat_bridge_spectrogram_get_info(int spectro_id, double* out_info) {
+    if (!out_info) return 0;
+    auto it = g_objectTable.find(spectro_id);
+    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classSpectrogram)) return 0;
+    Spectrogram spectro = (Spectrogram)it->second.get();
+
+    out_info[0] = spectro->xmin;
+    out_info[1] = spectro->xmax;
+    out_info[2] = (double)spectro->nx;
+    out_info[3] = spectro->dx;
+    out_info[4] = spectro->x1;
+    out_info[5] = spectro->ymin;
+    out_info[6] = spectro->ymax;
+    out_info[7] = (double)spectro->ny;
+    out_info[8] = spectro->dy;
+    out_info[9] = spectro->y1;
+    return 1;
+}
+
+int praat_bridge_spectrogram_get_matrix(int spectro_id, double* out_data) {
+    if (!out_data) return 0;
+    auto it = g_objectTable.find(spectro_id);
+    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classSpectrogram)) return 0;
+    Spectrogram spectro = (Spectrogram)it->second.get();
+
+    integer nx = spectro->nx;
+    integer ny = spectro->ny;
+    for (integer iy = 1; iy <= ny; ++iy) {
+        for (integer ix = 1; ix <= nx; ++ix) {
+            out_data[(iy - 1) * nx + (ix - 1)] = spectro->z[iy][ix];
+        }
+    }
+    return 1;
+}
+
+int praat_bridge_pitch_get_info(int pitch_id, double* out_info) {
+    if (!out_info) return 0;
+    auto it = g_objectTable.find(pitch_id);
+    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classPitch)) return 0;
+    Pitch pitch = (Pitch)it->second.get();
+
+    out_info[0] = pitch->xmin;
+    out_info[1] = pitch->xmax;
+    out_info[2] = (double)pitch->nx;
+    out_info[3] = pitch->dx;
+    out_info[4] = pitch->x1;
+    out_info[5] = pitch->ceiling;
+    return 1;
+}
+
+int praat_bridge_pitch_get_frames(int pitch_id, double* out_frequencies) {
+    if (!out_frequencies) return 0;
+    auto it = g_objectTable.find(pitch_id);
+    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classPitch)) return 0;
+    Pitch pitch = (Pitch)it->second.get();
+
+    for (integer i = 1; i <= pitch->nx; ++i) {
+        double f = 0.0;
+        if (pitch->frames[i].nCandidates > 0) {
+            double cand = pitch->frames[i].candidates[1].frequency;
+            if (Pitch_util_frequencyIsVoiced(cand, pitch->ceiling)) {
+                f = cand;
+            }
+        }
+        out_frequencies[i - 1] = f;
+    }
+    return 1;
+}
+
+int praat_bridge_formant_get_info(int formant_id, double* out_info) {
+    if (!out_info) return 0;
+    auto it = g_objectTable.find(formant_id);
+    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classFormant)) return 0;
+    Formant formant = (Formant)it->second.get();
+
+    out_info[0] = formant->xmin;
+    out_info[1] = formant->xmax;
+    out_info[2] = (double)formant->nx;
+    out_info[3] = formant->dx;
+    out_info[4] = formant->x1;
+    out_info[5] = (double)formant->maxnFormants;
+    return 1;
+}
+
+int praat_bridge_formant_get_frames(int formant_id, double* out_frequencies) {
+    if (!out_frequencies) return 0;
+    auto it = g_objectTable.find(formant_id);
+    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classFormant)) return 0;
+    Formant formant = (Formant)it->second.get();
+
+    integer maxP = formant->maxnFormants;
+    for (integer i = 1; i <= formant->nx; ++i) {
+        integer nFormants = formant->frames[i].numberOfFormants;
+        for (integer k = 1; k <= maxP; ++k) {
+            double f = (k <= nFormants) ? formant->frames[i].formant[k].frequency : 0.0;
+            out_frequencies[(i - 1) * maxP + (k - 1)] = f;
+        }
+    }
+    return 1;
+}
+
+int praat_bridge_intensity_get_info(int intensity_id, double* out_info) {
+    if (!out_info) return 0;
+    auto it = g_objectTable.find(intensity_id);
+    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classIntensity)) return 0;
+    Intensity intensity = (Intensity)it->second.get();
+
+    out_info[0] = intensity->xmin;
+    out_info[1] = intensity->xmax;
+    out_info[2] = (double)intensity->nx;
+    out_info[3] = intensity->dx;
+    out_info[4] = intensity->x1;
+    return 1;
+}
+
+int praat_bridge_intensity_get_frames(int intensity_id, double* out_values) {
+    if (!out_values) return 0;
+    auto it = g_objectTable.find(intensity_id);
+    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classIntensity)) return 0;
+    Intensity intensity = (Intensity)it->second.get();
+
+    for (integer i = 1; i <= intensity->nx; ++i) {
+        out_values[i - 1] = intensity->z[1][i];
+    }
+    return 1;
 }
 
 double praat_bridge_pitch_get_mean(int pitch_id, double tmin, double tmax) {

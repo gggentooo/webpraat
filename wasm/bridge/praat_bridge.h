@@ -26,6 +26,17 @@ int         praat_bridge_sound_save_as_wav_file(int sound_id, const char* path);
 int         praat_bridge_sound_to_pitch(int sound_id, double time_step, double pitch_floor, double pitch_ceiling);
 int         praat_bridge_sound_to_formant(int sound_id, double time_step, int n_formants, double max_formant, double window_length);
 int         praat_bridge_sound_to_spectrogram(int sound_id, double window_length, double max_freq, double time_step, double window_shape);
+int         praat_bridge_sound_to_intensity(int sound_id, double pitch_floor, double time_step, int subtract_mean);
+
+// Detailed contour / matrix extraction
+int         praat_bridge_spectrogram_get_info(int spectro_id, double* out_info);
+int         praat_bridge_spectrogram_get_matrix(int spectro_id, double* out_data);
+int         praat_bridge_pitch_get_info(int pitch_id, double* out_info);
+int         praat_bridge_pitch_get_frames(int pitch_id, double* out_frequencies);
+int         praat_bridge_formant_get_info(int formant_id, double* out_info);
+int         praat_bridge_formant_get_frames(int formant_id, double* out_frequencies);
+int         praat_bridge_intensity_get_info(int intensity_id, double* out_info);
+int         praat_bridge_intensity_get_frames(int intensity_id, double* out_values);
 
 // Queries & Data access
 double      praat_bridge_pitch_get_mean(int pitch_id, double tmin, double tmax);
