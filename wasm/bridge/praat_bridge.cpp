@@ -14,6 +14,7 @@
 #include "Sound_to_Pitch.h"
 #include "Sound_to_Formant.h"
 #include "Sound_and_Spectrogram.h"
+#include "melder_audiofiles.h"
 
 // Object table store
 static std::unordered_map<int, autoThing> g_objectTable;
@@ -61,6 +62,41 @@ int praat_bridge_create_sound(const double* samples, int n, int channels, double
             for (int i = 1; i <= n; ++i) {
                 sound->z[ch][i] = src[i - 1];
             }
+        }
+
+        int id = g_nextId++;
+        g_objectTable[id] = sound.move();
+        return id;
+    } catch (MelderError) {
+        Melder_clearError();
+        return 0;
+    }
+}
+
+int praat_bridge_sound_read_from_memory(const unsigned char* buffer, int length, const char* name) {
+    if (!buffer || length <= 0) return 0;
+    try {
+        static int s_tempFileCounter = 0;
+        char tempPath[64];
+        snprintf(tempPath, sizeof(tempPath), "/tmp/praat_temp_audio_%d.dat", ++s_tempFileCounter);
+
+        FILE* f = fopen(tempPath, "wb");
+        if (!f) return 0;
+        fwrite(buffer, 1, length, f);
+        fclose(f);
+
+        structMelderFile file;
+        Melder_pathToFile(Melder_peek8to32_u(tempPath), &file);
+
+        autoSound sound = Sound_readFromSoundFile(&file);
+        remove(tempPath);
+
+        if (!sound) return 0;
+
+        if (name && name[0] != '\0') {
+            Thing_setName(sound.get(), Melder_peek8to32_u(name));
+        } else {
+            Thing_setName(sound.get(), U"sound");
         }
 
         int id = g_nextId++;
@@ -129,6 +165,48 @@ int praat_bridge_sound_get_num_channels(int sound_id) {
     if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classSound)) return 0;
     Sound sound = (Sound)it->second.get();
     return (int)sound->ny;
+}
+
+int praat_bridge_sound_get_channel_samples(int sound_id, int channel, double* dest, int max_samples) {
+    auto it = g_objectTable.find(sound_id);
+    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classSound)) return 0;
+    Sound sound = (Sound)it->second.get();
+    if (channel < 1 || channel > sound->ny || !dest || max_samples <= 0) return 0;
+
+    int count = (int)sound->nx;
+    if (count > max_samples) count = max_samples;
+
+    for (int i = 1; i <= count; ++i) {
+        dest[i - 1] = sound->z[channel][i];
+    }
+    return count;
+}
+
+int praat_bridge_sound_save_as_wav_file(int sound_id, const char* path) {
+    auto it = g_objectTable.find(sound_id);
+    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classSound)) return 0;
+    Sound sound = (Sound)it->second.get();
+    if (!path || path[0] == '\0') return 0;
+
+    try {
+        structMelderFile file;
+        Melder_pathToFile(Melder_peek8to32_u(path), &file);
+        autoMelderFile mfile = MelderFile_create(&file);
+
+        integer numberOfChannels = sound->ny;
+        integer numberOfSamples = sound->nx;
+        integer sampleRate = Melder_iround_tieDown(1.0 / sound->dx);
+
+        MelderFile_writeAudioFileHeader(&file, Melder_WAV, sampleRate, numberOfSamples, numberOfChannels, 16);
+        MelderFile_writeFloatToAudio(&file, sound->z.get(), Melder_LINEAR_16_LITTLE_ENDIAN, true);
+        MelderFile_writeAudioFileTrailer(&file, Melder_WAV, sampleRate, numberOfSamples, numberOfChannels, 16);
+
+        mfile.close();
+        return 1;
+    } catch (MelderError) {
+        Melder_clearError();
+        return 0;
+    }
 }
 
 int praat_bridge_sound_to_pitch(int sound_id, double time_step, double pitch_floor, double pitch_ceiling) {
