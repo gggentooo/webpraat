@@ -83,6 +83,87 @@ export interface IntensityTrack {
   values: Float64Array; // nx intensity values in dB
 }
 
+export interface CppTrack {
+  xmin: number;
+  xmax: number;
+  nx: number;
+  dx: number;
+  x1: number;
+  values: Float64Array; // nx CPP values in dB
+}
+
+export interface MfccInfo {
+  xmin: number;
+  xmax: number;
+  nx: number;
+  dx: number;
+  x1: number;
+  maxNumCoefficients: number;
+}
+
+export interface PowerCepstrogramParams {
+  pitchFloor?: number;
+  timeStep?: number;
+  maxFreq?: number;
+  preEmphasis?: number;
+}
+
+export interface CppsQueryParams {
+  subtractTrend?: boolean;
+  timeAveragingWindow?: number;
+  quefrencyAveragingWindow?: number;
+  pitchFloor?: number;
+  pitchCeiling?: number;
+}
+
+export interface LpcAnalysisParams {
+  predictionOrder?: number;
+  windowLength?: number;
+  timeStep?: number;
+  preEmphasis?: number;
+}
+
+export interface MfccAnalysisParams {
+  numCoefficients?: number;
+  windowLength?: number;
+  timeStep?: number;
+  f1Mel?: number;
+  fmaxMel?: number;
+  dfMel?: number;
+}
+
+export interface KlattGridVowelParams {
+  name?: string;
+  duration?: number;
+  f0Start?: number;
+  f1?: number;
+  b1?: number;
+  f2?: number;
+  b2?: number;
+  f3?: number;
+  b3?: number;
+  f4?: number;
+}
+
+export interface KlattGridFromSoundParams {
+  timeStep?: number;
+  nFormants?: number;
+  maxFormant?: number;
+  windowLength?: number;
+  pitchFloor?: number;
+  pitchCeiling?: number;
+}
+
+export interface ImportedPraatObjectInfo {
+  id: number;
+  className: string;
+  name: string;
+  duration?: number;
+  sampleRate?: number;
+  numChannels?: number;
+  numSamples?: number;
+}
+
 export interface SoundAnalysisResult {
   spectrogram?: SpectrogramData;
   pitch?: PitchTrack;
@@ -105,6 +186,9 @@ export interface PraatWorkerApi {
   getObjectCount(): Promise<number>;
   getObjectName(id: number): Promise<string>;
   getObjectClass(id: number): Promise<string>;
+  renameObject(id: number, newName: string): Promise<boolean>;
+  exportObjectBinary(id: number): Promise<Uint8Array>;
+  importObjectBinary(data: Uint8Array, name?: string): Promise<ImportedPraatObjectInfo>;
   
   // Sound queries
   getSoundInfo(soundId: number): Promise<SoundInfo>;
@@ -162,4 +246,30 @@ export interface PraatWorkerApi {
   clearInfoOutput(): Promise<void>;
   getObjectsJson(): Promise<Array<{ id: number; className: string; name: string; duration?: number; sampleRate?: number; numChannels?: number; numSamples?: number }>>;
   selectObject(id: number): Promise<boolean>;
+
+  // Phase 7 Advanced DSP: Cepstral Peak Prominence (LPC / dwtools)
+  soundToPowerCepstrogram(soundId: number, params?: PowerCepstrogramParams): Promise<number>;
+  powerCepstrogramGetCpps(cepstrogramId: number, params?: CppsQueryParams): Promise<number>;
+  powerCepstrogramToCpp(cepstrogramId: number, pitchFloor?: number, pitchCeiling?: number): Promise<number>;
+  soundToCpp(soundId: number, pitchFloor?: number, pitchCeiling?: number, timeStep?: number): Promise<number>;
+  cppGetMean(cppId: number, tmin?: number, tmax?: number): Promise<number>;
+  getCppTrack(cppId: number): Promise<CppTrack>;
+
+  // Phase 7 Advanced DSP: KlattGrid Speech Synthesis (dwtools)
+  createKlattGridFromVowel(params?: KlattGridVowelParams): Promise<number>;
+  soundToKlattGrid(soundId: number, params?: KlattGridFromSoundParams): Promise<number>;
+  klattGridToSound(klattGridId: number): Promise<number>;
+
+  // Phase 7 Advanced DSP: LPC & MFCC (LPC / dwtools)
+  soundToLpcBurg(soundId: number, params?: LpcAnalysisParams): Promise<number>;
+  lpcToFormant(lpcId: number): Promise<number>;
+  soundToMfcc(soundId: number, params?: MfccAnalysisParams): Promise<number>;
+  getMfccInfo(mfccId: number): Promise<MfccInfo>;
+
+  // Phase 7 Advanced DSP: Articulatory Synthesis (artsynth)
+  createSpeaker(name?: string, kindOfSpeaker?: string, numVocalCordMasses?: number): Promise<number>;
+  createArtword(name?: string, duration?: number, defaultVoiced?: boolean): Promise<number>;
+  artwordSetTarget(artwordId: number, muscle: number, time: number, value: number): Promise<void>;
+  artwordGetTarget(artwordId: number, muscle: number, time: number): Promise<number>;
+  artwordSpeakerToSound(artwordId: number, speakerId: number, sampleRate?: number, oversampling?: number): Promise<number>;
 }

@@ -14,15 +14,16 @@ import {
 } from '../../store';
 import { useI18n } from '../../hooks/useI18n';
 import { getPraatWorker, loadAudioFile, exportSoundToWavBlob, downloadBlob } from '../../utils/audio';
+import { clearWorkspaceFromOpfs, saveWorkspaceToOpfs } from '../../utils/persistence';
 
 export const MenuBar: React.FC = () => {
   const { t, locale, setLocale } = useI18n();
-  const [, setObjects] = useAtom(objectsAtom);
+  const [objects, setObjects] = useAtom(objectsAtom);
   const [, setSelectedIds] = useAtom(selectedIdsAtom);
   const [, setModal] = useAtom(modalAtom);
   const [, setInfoOutput] = useAtom(infoOutputAtom);
   const [, setActiveTab] = useAtom(activeTabAtom);
-  const [, setScriptText] = useAtom(scriptTextAtom);
+  const [scriptText, setScriptText] = useAtom(scriptTextAtom);
   const [statusMessage, setStatusMessage] = useAtom(statusMessageAtom);
   const isProcessing = useAtomValue(isProcessingAtom);
   const selectedSound = useAtomValue(singleSelectedSoundAtom);
@@ -33,7 +34,6 @@ export const MenuBar: React.FC = () => {
   const scriptFileInputRef = useRef<HTMLInputElement>(null);
   const menuBarRef = useRef<HTMLDivElement>(null);
 
-  // Close open dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuBarRef.current && !menuBarRef.current.contains(event.target as Node)) {
@@ -121,6 +121,27 @@ export const MenuBar: React.FC = () => {
     }
   };
 
+  const handleSaveWorkspace = async () => {
+    try {
+      const worker = getPraatWorker();
+      await saveWorkspaceToOpfs(worker, objects, scriptText);
+      setStatusMessage(t.status.workspaceSaved);
+      setTimeout(() => setStatusMessage(''), 3000);
+    } catch (err) {
+      console.error('Failed to save workspace:', err);
+    }
+  };
+
+  const handleClearWorkspace = async () => {
+    try {
+      await clearWorkspaceFromOpfs();
+      setStatusMessage(t.status.workspaceCleared);
+      setTimeout(() => setStatusMessage(''), 3000);
+    } catch (err) {
+      console.error('Failed to clear workspace:', err);
+    }
+  };
+
   const handleScriptFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -163,7 +184,6 @@ export const MenuBar: React.FC = () => {
 
       {/* Left Menu Items */}
       <div className="flex items-center space-x-0.5">
-        {/* Brand / Logo */}
         <span className="mr-2 font-bold tracking-tight text-slate-900 px-1.5 py-0.5 bg-slate-300 rounded text-[11px]">
           WebPraat
         </span>
@@ -180,7 +200,7 @@ export const MenuBar: React.FC = () => {
             {t.menu.praat}
           </button>
           {activeMenu === 'praat' && (
-            <div className="absolute left-0 top-full z-40 mt-0.5 w-52 rounded border border-slate-300 bg-white py-1 shadow-lg text-slate-700">
+            <div className="absolute left-0 top-full z-40 mt-0.5 w-56 rounded border border-slate-300 bg-white py-1 shadow-lg text-slate-700">
               <button
                 type="button"
                 className="w-full px-3 py-1 text-left hover:bg-blue-600 hover:text-white"
@@ -200,6 +220,27 @@ export const MenuBar: React.FC = () => {
                 }}
               >
                 {t.commands.openPraatScript}
+              </button>
+              <div className="my-1 border-t border-slate-200" />
+              <button
+                type="button"
+                className="w-full px-3 py-1 text-left hover:bg-blue-600 hover:text-white"
+                onClick={() => {
+                  setActiveMenu(null);
+                  void handleSaveWorkspace();
+                }}
+              >
+                {t.commands.saveWorkspace}
+              </button>
+              <button
+                type="button"
+                className="w-full px-3 py-1 text-left hover:bg-blue-600 hover:text-white"
+                onClick={() => {
+                  setActiveMenu(null);
+                  void handleClearWorkspace();
+                }}
+              >
+                {t.commands.clearWorkspace}
               </button>
               <div className="my-1 border-t border-slate-200" />
               <button
@@ -239,7 +280,28 @@ export const MenuBar: React.FC = () => {
             {t.menu.new}
           </button>
           {activeMenu === 'new' && (
-            <div className="absolute left-0 top-full z-40 mt-0.5 w-56 rounded border border-slate-300 bg-white py-1 shadow-lg text-slate-700">
+            <div className="absolute left-0 top-full z-40 mt-0.5 w-64 rounded border border-slate-300 bg-white py-1 shadow-lg text-slate-700">
+              <button
+                type="button"
+                className="w-full px-3 py-1 text-left hover:bg-blue-600 hover:text-white"
+                onClick={() => {
+                  setModal({ type: 'soundRecorder', initialValues: { channels: 1 } });
+                  setActiveMenu(null);
+                }}
+              >
+                {t.commands.recordMonoSound}
+              </button>
+              <button
+                type="button"
+                className="w-full px-3 py-1 text-left hover:bg-blue-600 hover:text-white"
+                onClick={() => {
+                  setModal({ type: 'soundRecorder', initialValues: { channels: 2 } });
+                  setActiveMenu(null);
+                }}
+              >
+                {t.commands.recordStereoSound}
+              </button>
+              <div className="my-1 border-t border-slate-200" />
               <button
                 type="button"
                 className="w-full px-3 py-1 text-left hover:bg-blue-600 hover:text-white"
@@ -250,16 +312,36 @@ export const MenuBar: React.FC = () => {
               >
                 {t.commands.createSoundAsPureTone}
               </button>
+              <button
+                type="button"
+                className="w-full px-3 py-1 text-left hover:bg-blue-600 hover:text-white"
+                onClick={() => {
+                  setModal({ type: 'createKlattGridFromVowel' });
+                  setActiveMenu(null);
+                }}
+              >
+                {t.commands.createKlattGridFromVowel}
+              </button>
               <div className="my-1 border-t border-slate-200" />
               <button
                 type="button"
                 className="w-full px-3 py-1 text-left hover:bg-blue-600 hover:text-white"
                 onClick={() => {
-                  alert('Microphone recording will be available in Phase 7.');
+                  setModal({ type: 'createSpeaker' });
                   setActiveMenu(null);
                 }}
               >
-                {t.commands.recordMonoSound}
+                {t.commands.createSpeaker}
+              </button>
+              <button
+                type="button"
+                className="w-full px-3 py-1 text-left hover:bg-blue-600 hover:text-white"
+                onClick={() => {
+                  setModal({ type: 'createArtword' });
+                  setActiveMenu(null);
+                }}
+              >
+                {t.commands.createArtword}
               </button>
             </div>
           )}
@@ -315,7 +397,7 @@ export const MenuBar: React.FC = () => {
                 }`}
                 onClick={() => {
                   setActiveMenu(null);
-                  handleSaveWav();
+                  void handleSaveWav();
                 }}
               >
                 {t.commands.saveAsWavFile}
@@ -330,7 +412,7 @@ export const MenuBar: React.FC = () => {
                 }`}
                 onClick={() => {
                   setActiveMenu(null);
-                  handleSaveTextGrid();
+                  void handleSaveTextGrid();
                 }}
               >
                 {t.commands.saveAsTextGridFile}
@@ -378,7 +460,6 @@ export const MenuBar: React.FC = () => {
 
       {/* Right Controls: Language Selector & Status */}
       <div className="flex items-center space-x-3 text-xs">
-        {/* Status Indicator */}
         {isProcessing && (
           <span className="flex items-center space-x-1 text-blue-700">
             <span className="inline-block h-2 w-2 animate-ping rounded-full bg-blue-600" />
@@ -389,7 +470,6 @@ export const MenuBar: React.FC = () => {
           <span className="text-slate-600 font-normal">{statusMessage}</span>
         )}
 
-        {/* Language Switcher */}
         <div className="flex items-center rounded border border-slate-300 bg-white p-0.5 text-[11px]">
           <button
             type="button"

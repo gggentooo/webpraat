@@ -37,14 +37,20 @@ include_directories(
     praat/stat
     praat/dwtools
     praat/LPC
+    praat/artsynth
     praat/fon
     praat/external/clapack
     praat/external/flac
     praat/external/glpk
     praat/external/gsl
+    praat/external/lame
     praat/external/mp3
     praat/external/num
     praat/external/opusfile
+    praat/external/opusfile/opus
+    praat/external/opusfile/opus/celt
+    praat/external/opusfile/opus/silk
+    praat/external/opusfile/opus/silk/float
     praat/external/portaudio
     praat/external/vorbis
     praat/external/zlib
@@ -244,6 +250,147 @@ list(FILTER MP3_C_SOURCES EXCLUDE REGEX "test\\.c$")
 set(MP3_SOURCES ${MP3_C_SOURCES} praat/external/mp3/mp3.cpp)
 file(GLOB ZLIB_SOURCES praat/external/zlib/*.c)
 file(GLOB BLAKE3_SOURCES praat/external/blake3/*.c)
+file(GLOB LAME_SOURCES praat/external/lame/*.c)
+
+set(OPUSFILE_SOURCES
+    praat/external/opusfile/opusfile.cpp
+    praat/external/opusfile/opusfile_info.cpp
+    praat/external/opusfile/opusfile_internal.cpp
+    praat/external/opusfile/opusfile_stream.cpp
+    praat/external/opusfile/opus/analysis.c
+    praat/external/opusfile/opus/mlp.c
+    praat/external/opusfile/opus/opus.c
+    praat/external/opusfile/opus/opus_decoder.c
+    praat/external/opusfile/opus/opus_multistream.c
+    praat/external/opusfile/opus/mapping_matrix.c
+    praat/external/opusfile/opus/mlp_data.c
+    praat/external/opusfile/opus/opus_multistream_decoder.c
+    praat/external/opusfile/opus/opus_projection_decoder.c
+    praat/external/opusfile/opus/repacketizer.c
+    praat/external/opusfile/opus/celt/bands.c
+    praat/external/opusfile/opus/celt/celt.c
+    praat/external/opusfile/opus/celt/celt_encoder.c
+    praat/external/opusfile/opus/celt/celt_decoder.c
+    praat/external/opusfile/opus/celt/cwrs.c
+    praat/external/opusfile/opus/celt/entcode.c
+    praat/external/opusfile/opus/celt/entdec.c
+    praat/external/opusfile/opus/celt/entenc.c
+    praat/external/opusfile/opus/celt/kiss_fft.c
+    praat/external/opusfile/opus/celt/laplace.c
+    praat/external/opusfile/opus/celt/mathops.c
+    praat/external/opusfile/opus/celt/mdct.c
+    praat/external/opusfile/opus/celt/modes.c
+    praat/external/opusfile/opus/celt/pitch.c
+    praat/external/opusfile/opus/celt/celt_lpc.c
+    praat/external/opusfile/opus/celt/quant_bands.c
+    praat/external/opusfile/opus/celt/rate.c
+    praat/external/opusfile/opus/celt/vq.c
+    praat/external/opusfile/opus/silk/CNG.c
+    praat/external/opusfile/opus/silk/code_signs.c
+    praat/external/opusfile/opus/silk/init_decoder.c
+    praat/external/opusfile/opus/silk/decode_core.c
+    praat/external/opusfile/opus/silk/decode_frame.c
+    praat/external/opusfile/opus/silk/decode_parameters.c
+    praat/external/opusfile/opus/silk/decode_indices.c
+    praat/external/opusfile/opus/silk/decode_pulses.c
+    praat/external/opusfile/opus/silk/decoder_set_fs.c
+    praat/external/opusfile/opus/silk/dec_API.c
+    praat/external/opusfile/opus/silk/enc_API.c
+    praat/external/opusfile/opus/silk/encode_indices.c
+    praat/external/opusfile/opus/silk/encode_pulses.c
+    praat/external/opusfile/opus/silk/gain_quant.c
+    praat/external/opusfile/opus/silk/interpolate.c
+    praat/external/opusfile/opus/silk/LP_variable_cutoff.c
+    praat/external/opusfile/opus/silk/NLSF_decode.c
+    praat/external/opusfile/opus/silk/NSQ.c
+    praat/external/opusfile/opus/silk/NSQ_del_dec.c
+    praat/external/opusfile/opus/silk/PLC.c
+    praat/external/opusfile/opus/silk/shell_coder.c
+    praat/external/opusfile/opus/silk/tables_gain.c
+    praat/external/opusfile/opus/silk/tables_LTP.c
+    praat/external/opusfile/opus/silk/tables_NLSF_CB_NB_MB.c
+    praat/external/opusfile/opus/silk/tables_NLSF_CB_WB.c
+    praat/external/opusfile/opus/silk/tables_other.c
+    praat/external/opusfile/opus/silk/tables_pitch_lag.c
+    praat/external/opusfile/opus/silk/tables_pulses_per_block.c
+    praat/external/opusfile/opus/silk/VAD.c
+    praat/external/opusfile/opus/silk/control_audio_bandwidth.c
+    praat/external/opusfile/opus/silk/quant_LTP_gains.c
+    praat/external/opusfile/opus/silk/VQ_WMat_EC.c
+    praat/external/opusfile/opus/silk/HP_variable_cutoff.c
+    praat/external/opusfile/opus/silk/NLSF_encode.c
+    praat/external/opusfile/opus/silk/NLSF_VQ.c
+    praat/external/opusfile/opus/silk/NLSF_unpack.c
+    praat/external/opusfile/opus/silk/NLSF_del_dec_quant.c
+    praat/external/opusfile/opus/silk/process_NLSFs.c
+    praat/external/opusfile/opus/silk/stereo_LR_to_MS.c
+    praat/external/opusfile/opus/silk/stereo_MS_to_LR.c
+    praat/external/opusfile/opus/silk/check_control_input.c
+    praat/external/opusfile/opus/silk/control_SNR.c
+    praat/external/opusfile/opus/silk/init_encoder.c
+    praat/external/opusfile/opus/silk/control_codec.c
+    praat/external/opusfile/opus/silk/A2NLSF.c
+    praat/external/opusfile/opus/silk/ana_filt_bank_1.c
+    praat/external/opusfile/opus/silk/biquad_alt.c
+    praat/external/opusfile/opus/silk/bwexpander_32.c
+    praat/external/opusfile/opus/silk/bwexpander.c
+    praat/external/opusfile/opus/silk/debug.c
+    praat/external/opusfile/opus/silk/decode_pitch.c
+    praat/external/opusfile/opus/silk/inner_prod_aligned.c
+    praat/external/opusfile/opus/silk/lin2log.c
+    praat/external/opusfile/opus/silk/log2lin.c
+    praat/external/opusfile/opus/silk/LPC_analysis_filter.c
+    praat/external/opusfile/opus/silk/LPC_inv_pred_gain.c
+    praat/external/opusfile/opus/silk/table_LSF_cos.c
+    praat/external/opusfile/opus/silk/NLSF2A.c
+    praat/external/opusfile/opus/silk/NLSF_stabilize.c
+    praat/external/opusfile/opus/silk/NLSF_VQ_weights_laroia.c
+    praat/external/opusfile/opus/silk/pitch_est_tables.c
+    praat/external/opusfile/opus/silk/resampler.c
+    praat/external/opusfile/opus/silk/resampler_down2_3.c
+    praat/external/opusfile/opus/silk/resampler_down2.c
+    praat/external/opusfile/opus/silk/resampler_private_AR2.c
+    praat/external/opusfile/opus/silk/resampler_private_down_FIR.c
+    praat/external/opusfile/opus/silk/resampler_private_IIR_FIR.c
+    praat/external/opusfile/opus/silk/resampler_private_up2_HQ.c
+    praat/external/opusfile/opus/silk/resampler_rom.c
+    praat/external/opusfile/opus/silk/sigm_Q15.c
+    praat/external/opusfile/opus/silk/sort.c
+    praat/external/opusfile/opus/silk/sum_sqr_shift.c
+    praat/external/opusfile/opus/silk/stereo_decode_pred.c
+    praat/external/opusfile/opus/silk/stereo_encode_pred.c
+    praat/external/opusfile/opus/silk/stereo_find_predictor.c
+    praat/external/opusfile/opus/silk/stereo_quant_pred.c
+    praat/external/opusfile/opus/silk/LPC_fit.c
+    praat/external/opusfile/opus/silk/float/apply_sine_window_FLP.c
+    praat/external/opusfile/opus/silk/float/autocorrelation_FLP.c
+    praat/external/opusfile/opus/silk/float/burg_modified_FLP.c
+    praat/external/opusfile/opus/silk/float/bwexpander_FLP.c
+    praat/external/opusfile/opus/silk/float/corrMatrix_FLP.c
+    praat/external/opusfile/opus/silk/float/encode_frame_FLP.c
+    praat/external/opusfile/opus/silk/float/energy_FLP.c
+    praat/external/opusfile/opus/silk/float/find_LPC_FLP.c
+    praat/external/opusfile/opus/silk/float/find_LTP_FLP.c
+    praat/external/opusfile/opus/silk/float/find_pitch_lags_FLP.c
+    praat/external/opusfile/opus/silk/float/find_pred_coefs_FLP.c
+    praat/external/opusfile/opus/silk/float/inner_product_FLP.c
+    praat/external/opusfile/opus/silk/float/k2a_FLP.c
+    praat/external/opusfile/opus/silk/float/LPC_analysis_filter_FLP.c
+    praat/external/opusfile/opus/silk/float/LPC_inv_pred_gain_FLP.c
+    praat/external/opusfile/opus/silk/float/LTP_analysis_filter_FLP.c
+    praat/external/opusfile/opus/silk/float/LTP_scale_ctrl_FLP.c
+    praat/external/opusfile/opus/silk/float/noise_shape_analysis_FLP.c
+    praat/external/opusfile/opus/silk/float/pitch_analysis_core_FLP.c
+    praat/external/opusfile/opus/silk/float/process_gains_FLP.c
+    praat/external/opusfile/opus/silk/float/regularize_correlations_FLP.c
+    praat/external/opusfile/opus/silk/float/residual_energy_FLP.c
+    praat/external/opusfile/opus/silk/float/scale_copy_vector_FLP.c
+    praat/external/opusfile/opus/silk/float/scale_vector_FLP.c
+    praat/external/opusfile/opus/silk/float/schur_FLP.c
+    praat/external/opusfile/opus/silk/float/sort_FLP.c
+    praat/external/opusfile/opus/silk/float/warped_autocorrelation_FLP.c
+    praat/external/opusfile/opus/silk/float/wrappers_FLP.c
+)
 
 set(EXTERNAL_SOURCES
     ${NUM_SOURCES}
@@ -253,6 +400,8 @@ set(EXTERNAL_SOURCES
     ${FLAC_SOURCES}
     ${VORBIS_SOURCES}
     ${MP3_SOURCES}
+    ${LAME_SOURCES}
+    ${OPUSFILE_SOURCES}
     ${ZLIB_SOURCES}
     ${BLAKE3_SOURCES}
 )
@@ -339,7 +488,129 @@ set(FON_SOURCES
     praat/fon/Corpus.cpp
 )
 
-# 7. Bridge sources
+# 7. stat headless sources
+set(STAT_SOURCES
+    praat/stat/Table.cpp
+    praat/stat/TableOfReal.cpp
+    praat/stat/Distributions.cpp
+    praat/stat/Distributions_and_Strings.cpp
+    praat/stat/PairDistribution.cpp
+    praat/stat/Regression.cpp
+    praat/stat/LogisticRegression.cpp
+)
+
+# 8. LPC sources (Linear Predictive Coding, Cepstrum, PowerCepstrogram, CPP)
+set(LPC_SOURCES
+    praat/LPC/Cepstrum.cpp
+    praat/LPC/Cepstrumc.cpp
+    praat/LPC/Cepstrum_and_Spectrum.cpp
+    praat/LPC/Cepstrogram.cpp
+    praat/LPC/CPP.cpp
+    praat/LPC/PowerCepstrum.cpp
+    praat/LPC/PowerCepstrogram.cpp
+    praat/LPC/Sound_to_PowerCepstrogram.cpp
+    praat/LPC/Sound_to_CPP.cpp
+    praat/LPC/Sound_and_Cepstrum.cpp
+    praat/LPC/LPC.cpp
+    praat/LPC/Sound_and_LPC.cpp
+    praat/LPC/LPC_and_Formant.cpp
+    praat/LPC/LPC_and_Polynomial.cpp
+    praat/LPC/LPC_and_Cepstrumc.cpp
+    praat/LPC/LPC_and_LFCC.cpp
+    praat/LPC/LPC_to_Spectrum.cpp
+    praat/LPC/LPC_to_Spectrogram.cpp
+    praat/LPC/LPC_and_Tube.cpp
+    praat/LPC/Tube.cpp
+    praat/LPC/Roots_and_Formant.cpp
+    praat/LPC/LineSpectralFrequencies.cpp
+    praat/LPC/LPC_and_LineSpectralFrequencies.cpp
+    praat/LPC/VocalTractTier.cpp
+    praat/LPC/Formant_extensions.cpp
+)
+
+# 9. dwtools sources (KlattGrid, MFCC, LFCC, FilterBank, CC, Resonator, SoundFrames, extensions)
+set(DWTOOLS_SOURCES
+    praat/dwtools/AffineTransform.cpp
+    praat/dwtools/Categories.cpp
+    praat/dwtools/Categories_and_Strings.cpp
+    praat/dwtools/CC.cpp
+    praat/dwtools/CCs_to_DTW.cpp
+    praat/dwtools/ClassificationTable.cpp
+    praat/dwtools/Confusion.cpp
+    praat/dwtools/Configuration.cpp
+    praat/dwtools/Configuration_AffineTransform.cpp
+    praat/dwtools/Configuration_and_Procrustes.cpp
+    praat/dwtools/ContingencyTable.cpp
+    praat/dwtools/Correlation.cpp
+    praat/dwtools/Covariance.cpp
+    praat/dwtools/DataModeler.cpp
+    praat/dwtools/Discriminant.cpp
+    praat/dwtools/Distance.cpp
+    praat/dwtools/DTW.cpp
+    praat/dwtools/Eigen_and_Matrix.cpp
+    praat/dwtools/Eigen_and_Procrustes.cpp
+    praat/dwtools/Eigen_and_SSCP.cpp
+    praat/dwtools/Eigen_and_TableOfReal.cpp
+    praat/dwtools/Excitations.cpp
+    praat/dwtools/FilterBank.cpp
+    praat/dwtools/FormantGrid_extensions.cpp
+    praat/dwtools/Intensity_extensions.cpp
+    praat/dwtools/KlattGrid.cpp
+    praat/dwtools/KlattTable.cpp
+    praat/dwtools/LFCC.cpp
+    praat/dwtools/Ltas_extensions.cpp
+    praat/dwtools/Matrix_Categories.cpp
+    praat/dwtools/Matrix_extensions.cpp
+    praat/dwtools/MFCC.cpp
+    praat/dwtools/Minimizers.cpp
+    praat/dwtools/PatternList.cpp
+    praat/dwtools/PCA.cpp
+    praat/dwtools/Pitch_extensions.cpp
+    praat/dwtools/Polygon_extensions.cpp
+    praat/dwtools/Polynomial_to_Spectrum.cpp
+    praat/dwtools/Procrustes.cpp
+    praat/dwtools/Proximity.cpp
+    praat/dwtools/Proximity_and_Distance.cpp
+    praat/dwtools/Resonator.cpp
+    praat/dwtools/Roots_to_Spectrum.cpp
+    praat/dwtools/SoundFrames.cpp
+    praat/dwtools/Sound_and_Spectrogram_extensions.cpp
+    praat/dwtools/Sound_and_Spectrum_dft.cpp
+    praat/dwtools/Sound_and_TextGrid_extensions.cpp
+    praat/dwtools/Sound_extensions.cpp
+    praat/dwtools/Sound_to_MFCC.cpp
+    praat/dwtools/Sounds_to_DTW.cpp
+    praat/dwtools/Spectrogram_extensions.cpp
+    praat/dwtools/Spectrum_extensions.cpp
+    praat/dwtools/SSCP.cpp
+    praat/dwtools/Strings_extensions.cpp
+    praat/dwtools/Table_extensions.cpp
+    praat/dwtools/TableOfReal_and_Permutation.cpp
+    praat/dwtools/TableOfReal_and_SVD.cpp
+    praat/dwtools/TableOfReal_extensions.cpp
+    praat/dwtools/TextGrid_and_DurationTier.cpp
+    praat/dwtools/TextGrid_and_PitchTier.cpp
+    praat/dwtools/TextGrid_extensions.cpp
+    praat/dwtools/Vector_extensions.cpp
+)
+
+# 10. artsynth sources (Articulatory synthesis: Speaker, Artword, Articulation)
+set(ARTSYNTH_SOURCES
+    praat/artsynth/Speaker.cpp
+    praat/artsynth/Articulation.cpp
+    praat/artsynth/Artword.cpp
+    praat/artsynth/Art_Speaker.cpp
+    praat/artsynth/Art_Speaker_to_VocalTract.cpp
+    praat/artsynth/Artword_Speaker.cpp
+    praat/artsynth/Artword_Speaker_Sound.cpp
+    praat/artsynth/Artword_Speaker_to_Sound.cpp
+    praat/artsynth/Artword_to_Art.cpp
+    praat/artsynth/Delta.cpp
+    praat/artsynth/Speaker_to_Delta.cpp
+    praat/artsynth/Art_Speaker_Delta.cpp
+)
+
+# 11. Bridge sources
 set(BRIDGE_SOURCES
     bridge/praat_bridge.cpp
     bridge/portaudio_stub.c
@@ -354,6 +625,10 @@ add_library(praat_core STATIC
     ${SYS_SOURCES}
     ${EXTERNAL_SOURCES}
     ${FON_SOURCES}
+    ${STAT_SOURCES}
+    ${LPC_SOURCES}
+    ${DWTOOLS_SOURCES}
+    ${ARTSYNTH_SOURCES}
     ${BRIDGE_SOURCES}
 )
 
@@ -384,7 +659,7 @@ set(EMSCRIPTEN_LINK_FLAGS
     "-s EXPORT_NAME=createPraatModule"
     "-s NO_EXIT_RUNTIME=1"
     "-s EXPORTED_RUNTIME_METHODS=['ccall','cwrap','getValue','setValue','UTF8ToString','stringToUTF8','HEAP8','HEAP16','HEAP32','HEAPU8','HEAPU16','HEAPU32','HEAPF32','HEAPF64','FS']"
-    "-s EXPORTED_FUNCTIONS=['_malloc','_free','_praat_bridge_init','_praat_bridge_create_sound','_praat_bridge_sound_read_from_memory','_praat_bridge_destroy_object','_praat_bridge_get_object_count','_praat_bridge_get_object_name','_praat_bridge_get_object_class','_praat_bridge_sound_get_duration','_praat_bridge_sound_get_sample_rate','_praat_bridge_sound_get_num_samples','_praat_bridge_sound_get_num_channels','_praat_bridge_sound_get_channel_samples','_praat_bridge_sound_save_as_wav_file','_praat_bridge_sound_to_pitch','_praat_bridge_sound_to_formant','_praat_bridge_sound_to_spectrogram','_praat_bridge_sound_to_intensity','_praat_bridge_spectrogram_get_info','_praat_bridge_spectrogram_get_matrix','_praat_bridge_pitch_get_info','_praat_bridge_pitch_get_frames','_praat_bridge_formant_get_info','_praat_bridge_formant_get_frames','_praat_bridge_intensity_get_info','_praat_bridge_intensity_get_frames','_praat_bridge_pitch_get_mean','_praat_bridge_pitch_get_value_at_time','_praat_bridge_create_textgrid','_praat_bridge_sound_to_textgrid','_praat_bridge_textgrid_to_json','_praat_bridge_textgrid_save_to_file','_praat_bridge_textgrid_read_from_file','_praat_bridge_textgrid_insert_boundary','_praat_bridge_textgrid_remove_boundary_at_time','_praat_bridge_textgrid_set_interval_text','_praat_bridge_textgrid_insert_point','_praat_bridge_textgrid_set_point_text','_praat_bridge_execute_script','_praat_bridge_get_info_output','_praat_bridge_clear_info_output','_praat_bridge_get_objects_json','_praat_bridge_select_object']"
+    "-s EXPORTED_FUNCTIONS=['_malloc','_free','_praat_bridge_init','_praat_bridge_create_sound','_praat_bridge_sound_read_from_memory','_praat_bridge_destroy_object','_praat_bridge_get_object_count','_praat_bridge_get_object_name','_praat_bridge_get_object_class','_praat_bridge_rename_object','_praat_bridge_object_save_to_binary_file','_praat_bridge_object_read_from_file','_praat_bridge_sound_get_duration','_praat_bridge_sound_get_sample_rate','_praat_bridge_sound_get_num_samples','_praat_bridge_sound_get_num_channels','_praat_bridge_sound_get_channel_samples','_praat_bridge_sound_save_as_wav_file','_praat_bridge_sound_to_pitch','_praat_bridge_sound_to_formant','_praat_bridge_sound_to_spectrogram','_praat_bridge_sound_to_intensity','_praat_bridge_spectrogram_get_info','_praat_bridge_spectrogram_get_matrix','_praat_bridge_pitch_get_info','_praat_bridge_pitch_get_frames','_praat_bridge_formant_get_info','_praat_bridge_formant_get_frames','_praat_bridge_intensity_get_info','_praat_bridge_intensity_get_frames','_praat_bridge_pitch_get_mean','_praat_bridge_pitch_get_value_at_time','_praat_bridge_create_textgrid','_praat_bridge_sound_to_textgrid','_praat_bridge_textgrid_to_json','_praat_bridge_textgrid_save_to_file','_praat_bridge_textgrid_read_from_file','_praat_bridge_textgrid_insert_boundary','_praat_bridge_textgrid_remove_boundary_at_time','_praat_bridge_textgrid_set_interval_text','_praat_bridge_textgrid_insert_point','_praat_bridge_textgrid_set_point_text','_praat_bridge_execute_script','_praat_bridge_get_info_output','_praat_bridge_clear_info_output','_praat_bridge_get_objects_json','_praat_bridge_select_object','_praat_bridge_sound_to_power_cepstrogram','_praat_bridge_power_cepstrogram_get_cpps','_praat_bridge_power_cepstrogram_to_cpp','_praat_bridge_sound_to_cpp','_praat_bridge_cpp_get_mean','_praat_bridge_cpp_get_info','_praat_bridge_cpp_get_frames','_praat_bridge_create_klattgrid_from_vowel','_praat_bridge_sound_to_klattgrid','_praat_bridge_klattgrid_to_sound','_praat_bridge_sound_to_lpc_burg','_praat_bridge_lpc_to_formant','_praat_bridge_sound_to_mfcc','_praat_bridge_mfcc_get_info','_praat_bridge_create_speaker','_praat_bridge_create_artword','_praat_bridge_artword_set_target','_praat_bridge_artword_get_target','_praat_bridge_artword_speaker_to_sound']"
 )
 
 string(JOIN " " EMSCRIPTEN_LINK_FLAGS_STR ${EMSCRIPTEN_LINK_FLAGS})

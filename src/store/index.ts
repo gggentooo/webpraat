@@ -4,7 +4,15 @@
  */
 
 import { atom } from 'jotai';
-import type { PraatId, PraatObject, EditorTabType, ModalState } from '../types/praat';
+import type {
+  PraatId,
+  PraatObject,
+  EditorTabType,
+  ModalState,
+  PictureCommand,
+  PictureViewport,
+  PicturePenSettings,
+} from '../types/praat';
 import { defaultLocale, getTranslation, type SupportedLocale } from '../config/i18n';
 
 // Core State Atoms
@@ -20,6 +28,23 @@ export const isScriptRunningAtom = atom<boolean>(false);
 export const modalAtom = atom<ModalState | null>(null);
 export const isProcessingAtom = atom<boolean>(false);
 export const statusMessageAtom = atom<string>('');
+export const workspaceHydratedAtom = atom<boolean>(false);
+
+// Praat Picture Window State Atoms (Phase 7)
+export const pictureCommandsAtom = atom<PictureCommand[]>([]);
+export const pictureViewportAtom = atom<PictureViewport>({
+  x1: 0,
+  x2: 6,
+  y1: 0,
+  y2: 4,
+});
+export const picturePenAtom = atom<PicturePenSettings>({
+  colour: 'Black',
+  lineWidth: 1,
+  lineType: 'solid',
+  fontSize: 12,
+  garnish: true,
+});
 
 // Derived Atoms
 export const selectedObjectsAtom = atom((get) => {
@@ -53,9 +78,39 @@ export const singleSelectedSpectrogramAtom = atom((get) => {
   return single && single.className === 'Spectrogram' ? single : null;
 });
 
+export const singleSelectedIntensityAtom = atom((get) => {
+  const single = get(singleSelectedObjectAtom);
+  return single && single.className === 'Intensity' ? single : null;
+});
+
 export const singleSelectedTextGridAtom = atom((get) => {
   const single = get(singleSelectedObjectAtom);
   return single && single.className === 'TextGrid' ? single : null;
+});
+
+export const singleSelectedPowerCepstrogramAtom = atom((get) => {
+  const single = get(singleSelectedObjectAtom);
+  return single && single.className === 'PowerCepstrogram' ? single : null;
+});
+
+export const singleSelectedCppAtom = atom((get) => {
+  const single = get(singleSelectedObjectAtom);
+  return single && single.className === 'CPP' ? single : null;
+});
+
+export const singleSelectedLpcAtom = atom((get) => {
+  const single = get(singleSelectedObjectAtom);
+  return single && single.className === 'LPC' ? single : null;
+});
+
+export const singleSelectedMfccAtom = atom((get) => {
+  const single = get(singleSelectedObjectAtom);
+  return single && single.className === 'MFCC' ? single : null;
+});
+
+export const singleSelectedKlattGridAtom = atom((get) => {
+  const single = get(singleSelectedObjectAtom);
+  return single && single.className === 'KlattGrid' ? single : null;
 });
 
 export const soundAndTextGridSelectedAtom = atom((get) => {
@@ -65,6 +120,17 @@ export const soundAndTextGridSelectedAtom = atom((get) => {
   const textGrid = selected.find((o) => o.className === 'TextGrid');
   if (sound && textGrid) {
     return { sound, textGrid };
+  }
+  return null;
+});
+
+export const artwordAndSpeakerSelectedAtom = atom((get) => {
+  const selected = get(selectedObjectsAtom);
+  if (selected.length !== 2) return null;
+  const artword = selected.find((o) => o.className === 'Artword');
+  const speaker = selected.find((o) => o.className === 'Speaker');
+  if (artword && speaker) {
+    return { artword, speaker };
   }
   return null;
 });

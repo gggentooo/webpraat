@@ -10,9 +10,13 @@ import {
   objectsAtom,
   selectedIdsAtom,
   statusMessageAtom,
+  pictureCommandsAtom,
+  pictureViewportAtom,
+  picturePenAtom,
 } from '../../store';
 import { useI18n } from '../../hooks/useI18n';
 import { getPraatWorker, downloadBlob } from '../../utils/audio';
+import { parsePraatPictureScriptCommands } from '../../utils/pictureRenderer';
 import { praatLanguage } from './praatSyntax';
 
 interface ScriptConsoleProps {
@@ -27,6 +31,9 @@ export const ScriptConsole: React.FC<ScriptConsoleProps> = ({ onClose }) => {
   const [, setObjects] = useAtom(objectsAtom);
   const [, setSelectedIds] = useAtom(selectedIdsAtom);
   const [, setStatusMessage] = useAtom(statusMessageAtom);
+  const [, setPictureCommands] = useAtom(pictureCommandsAtom);
+  const [pictureViewport, setPictureViewport] = useAtom(pictureViewportAtom);
+  const [picturePen, setPicturePen] = useAtom(picturePenAtom);
 
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const editorViewRef = useRef<EditorView | null>(null);
@@ -82,6 +89,35 @@ appendInfoLine: "Count: ", n
 appendInfoLine: "Sum:   ", fixed$(total, 2)
 appendInfoLine: "Mean:  ", fixed$(mean, 2)
 `,
+    picture: `# Praat Script: Vowel Space Vector Plot in Praat Picture
+Erase all
+Select outer viewport: 0, 6, 0, 5
+Axes: 2500, 500, 900, 200
+Colour: "Black"
+Line width: 1.5
+Draw inner box
+Text top: "no", "Cardinal Vowel F1-F2 Space"
+
+Colour: "Blue"
+Paint circle: "Blue", 2250, 280, 35
+Text: 2250, "centre", 230, "half", "/i/"
+
+Colour: "Red"
+Paint circle: "Red", 1200, 750, 35
+Text: 1200, "centre", 810, "half", "/a/"
+
+Colour: "Teal"
+Paint circle: "Teal", 750, 300, 35
+Text: 750, "centre", 250, "half", "/u/"
+
+Colour: "Grey"
+Dashed line
+Draw line: 2250, 280, 1200, 750
+Draw line: 1200, 750, 750, 300
+Draw line: 750, 300, 2250, 280
+Solid line
+writeInfoLine: "Drew vowel triangle to Praat Picture!"
+`,
   };
 
   const handleRunScript = async () => {
@@ -90,12 +126,33 @@ appendInfoLine: "Mean:  ", fixed$(mean, 2)
     setStatusMessage(t.script.running);
 
     try {
-      const worker = getPraatWorker();
-      const output = await worker.executeScript(scriptText);
+      const parsedPic = parsePraatPictureScriptCommands(
+        scriptText,
+        pictureViewport,
+        picturePen
+      );
 
-      // Append output to Info window
-      if (output) {
-        setInfoOutput((prev) => (prev ? prev + '\n' + output : output));
+      if (parsedPic.hasPictureCommands) {
+        setPictureViewport(parsedPic.finalViewport);
+        setPicturePen(parsedPic.finalPen);
+        setPictureCommands((prev) =>
+          parsedPic.eraseAll ? parsedPic.commands : [...prev, ...parsedPic.commands]
+        );
+      }
+
+      const hasRemainingExecutable = parsedPic.remainingDspScript
+        .split(/\r?\n/)
+        .some((l) => {
+          const trimmed = l.trim();
+          return trimmed.length > 0 && !trimmed.startsWith('#') && !trimmed.startsWith(';');
+        });
+
+      const worker = getPraatWorker();
+      if (hasRemainingExecutable) {
+        const output = await worker.executeScript(parsedPic.remainingDspScript);
+        if (output) {
+          setInfoOutput((prev) => (prev ? prev + '\n' + output : output));
+        }
       }
 
       // Synchronize objects list with WASM state
@@ -135,7 +192,6 @@ appendInfoLine: "Mean:  ", fixed$(mean, 2)
 
   runScriptRef.current = handleRunScript;
 
-  // Initialize CodeMirror 6
   useEffect(() => {
     if (!editorContainerRef.current) return;
 
@@ -191,9 +247,9 @@ appendInfoLine: "Mean:  ", fixed$(mean, 2)
       view.destroy();
       editorViewRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Sync external changes to editor doc
   const updateEditorDoc = (newText: string) => {
     setScriptText(newText);
     if (editorViewRef.current) {
@@ -248,7 +304,6 @@ appendInfoLine: "Mean:  ", fixed$(mean, 2)
 
   return (
     <div className="flex h-full w-full flex-col bg-white">
-      {/* Hidden File Input */}
       <input
         ref={fileInputRef}
         type="file"
@@ -257,10 +312,8 @@ appendInfoLine: "Mean:  ", fixed$(mean, 2)
         onChange={handleOpenScriptFile}
       />
 
-      {/* Script Console Action Toolbar */}
       <div className="flex h-10 shrink-0 items-center justify-between border-b border-slate-300 bg-slate-100 px-3 text-xs">
         <div className="flex items-center space-x-2">
-          {/* Run Button */}
           <button
             type="button"
             onClick={handleRunScript}
@@ -289,7 +342,6 @@ appendInfoLine: "Mean:  ", fixed$(mean, 2)
 
           <div className="h-4 border-r border-slate-300 mx-1" />
 
-          {/* Clear Script */}
           <button
             type="button"
             onClick={handleClearScript}
@@ -298,7 +350,6 @@ appendInfoLine: "Mean:  ", fixed$(mean, 2)
             {t.script.clear}
           </button>
 
-          {/* Clear Info */}
           <button
             type="button"
             onClick={handleClearInfo}
@@ -307,7 +358,6 @@ appendInfoLine: "Mean:  ", fixed$(mean, 2)
             {t.script.clearInfo}
           </button>
 
-          {/* Sample Scripts Selector */}
           <select
             defaultValue=""
             onChange={handleSelectSample}
@@ -319,11 +369,11 @@ appendInfoLine: "Mean:  ", fixed$(mean, 2)
             <option value="arithmetic">{t.script.sampleArithmetic}</option>
             <option value="procedures">{t.script.sampleProcedures}</option>
             <option value="variables">{t.script.sampleVariables}</option>
+            <option value="picture">{t.script.samplePicture}</option>
           </select>
         </div>
 
         <div className="flex items-center space-x-2">
-          {/* Open Script File */}
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
@@ -332,7 +382,6 @@ appendInfoLine: "Mean:  ", fixed$(mean, 2)
             {t.script.openScript}
           </button>
 
-          {/* Save Script File */}
           <button
             type="button"
             onClick={handleSaveScript}
@@ -354,7 +403,6 @@ appendInfoLine: "Mean:  ", fixed$(mean, 2)
         </div>
       </div>
 
-      {/* CodeMirror Editor Container */}
       <div className="flex-1 overflow-hidden relative">
         <div ref={editorContainerRef} className="h-full w-full" />
       </div>

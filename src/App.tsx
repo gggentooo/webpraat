@@ -1,29 +1,92 @@
-import { useAtom, useAtomValue } from 'jotai';
+import { useEffect, useRef } from 'react';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import {
   activeTabAtom,
   editorSoundIdAtom,
   editorTextGridIdAtom,
   objectsAtom,
+  selectedIdsAtom,
+  scriptTextAtom,
   statusMessageAtom,
   isProcessingAtom,
+  workspaceHydratedAtom,
 } from './store';
 import { useI18n } from './hooks/useI18n';
 import { MenuBar } from './components/MenuBar/MenuBar';
 import { ObjectsPanel } from './components/ObjectsPanel/ObjectsPanel';
 import { InfoWindow } from './components/InfoWindow/InfoWindow';
 import { ModalDialog } from './components/shared/ModalDialog';
+import { SoundRecorderModal } from './components/SoundRecorder/SoundRecorderModal';
 import { SoundEditor } from './components/SoundEditor/SoundEditor';
 import { TextGridEditor } from './components/TextGridEditor/TextGridEditor';
 import { ScriptConsole } from './components/ScriptConsole/ScriptConsole';
+import { PictureWindow } from './components/PictureWindow/PictureWindow';
+import { getPraatWorker } from './utils/audio';
+import { loadWorkspaceFromOpfs, saveWorkspaceToOpfs } from './utils/persistence';
 
 export default function App() {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useAtom(activeTabAtom);
   const [editorSoundId, setEditorSoundId] = useAtom(editorSoundIdAtom);
   const [editorTextGridId, setEditorTextGridId] = useAtom(editorTextGridIdAtom);
-  const objects = useAtomValue(objectsAtom);
-  const statusMessage = useAtomValue(statusMessageAtom);
+  const [objects, setObjects] = useAtom(objectsAtom);
+  const setSelectedIds = useSetAtom(selectedIdsAtom);
+  const [scriptText, setScriptText] = useAtom(scriptTextAtom);
+  const [statusMessage, setStatusMessage] = useAtom(statusMessageAtom);
   const isProcessing = useAtomValue(isProcessingAtom);
+  const [hydrated, setHydrated] = useAtom(workspaceHydratedAtom);
+
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Restore cached workspace from OPFS on startup
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const worker = getPraatWorker();
+        const restored = await loadWorkspaceFromOpfs(worker);
+        if (!cancelled && restored) {
+          if (restored.objects.length > 0) {
+            setObjects(restored.objects);
+            setSelectedIds([restored.objects[0].id]);
+            setStatusMessage(t.status.workspaceRestored);
+          }
+          if (restored.scriptText) {
+            setScriptText(restored.scriptText);
+          }
+        }
+      } catch (err) {
+        console.warn('OPFS workspace restore skipped:', err);
+      } finally {
+        if (!cancelled) {
+          setHydrated(true);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auto-persist workspace objects & script to OPFS after hydration
+  useEffect(() => {
+    if (!hydrated) return;
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+    saveTimerRef.current = setTimeout(() => {
+      const worker = getPraatWorker();
+      void saveWorkspaceToOpfs(worker, objects, scriptText);
+    }, 800);
+
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+    };
+  }, [hydrated, objects, scriptText]);
 
   const editorSound = objects.find((o) => o.id === editorSoundId);
   const editorTextGrid = objects.find((o) => o.id === editorTextGridId);
@@ -58,7 +121,7 @@ export default function App() {
           <div className="flex h-7 shrink-0 items-center border-b border-slate-300 bg-slate-200 px-2 text-xs font-medium">
             <button
               type="button"
-              onClick={() => setActiveTab('objects')}
+              onClick={() => setActiveTab('picture')}
               className={`flex items-center px-3 py-1 rounded-t border-t border-x ${
                 activeTab === 'objects' || activeTab === 'picture'
                   ? 'border-slate-300 bg-white text-slate-800 font-semibold'
@@ -149,7 +212,7 @@ export default function App() {
           </div>
 
           {/* Tab Content Body */}
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden min-h-0">
             {activeTab === 'soundEditor' && editorSound ? (
               <SoundEditor sound={editorSound} onClose={handleCloseEditor} />
             ) : activeTab === 'textGridEditor' && editorTextGrid ? (
@@ -161,34 +224,7 @@ export default function App() {
             ) : activeTab === 'script' ? (
               <ScriptConsole onClose={() => setActiveTab('objects')} />
             ) : (
-              /* Default Praat Picture Drawing Area */
-              <div className="h-full w-full p-4 overflow-auto">
-                <div className="flex h-full flex-col rounded border border-slate-300 bg-white shadow-xs">
-                  <div className="flex h-7 items-center justify-between border-b border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-600">
-                    <span>{t.app.pictureTitle}</span>
-                    <span className="text-[11px] font-normal text-slate-400">
-                      [0..12] × [0..12]
-                    </span>
-                  </div>
-                  <div className="flex flex-1 items-center justify-center p-6">
-                    <div className="relative aspect-square h-full max-h-[460px] rounded border border-slate-300 bg-white p-4 shadow-inner flex flex-col justify-between">
-                      <div className="text-[10px] text-slate-400 font-mono">12.0</div>
-                      <div className="flex flex-col items-center justify-center text-center">
-                        <span className="font-semibold text-slate-500 text-sm">
-                          {t.app.pictureTitle}
-                        </span>
-                        <span className="mt-1 text-xs text-slate-400">
-                          {t.app.subtitle}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-[10px] text-slate-400 font-mono">
-                        <span>0.0</span>
-                        <span>12.0</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <PictureWindow />
             )}
           </div>
         </main>
@@ -212,8 +248,9 @@ export default function App() {
         )}
       </div>
 
-      {/* 5. Global Modal Dialog */}
+      {/* 5. Global Modal Dialogs */}
       <ModalDialog />
+      <SoundRecorderModal />
     </div>
   );
 }

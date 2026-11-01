@@ -9,6 +9,7 @@ import {
   editorSoundIdAtom,
   editorTextGridIdAtom,
   statusMessageAtom,
+  isProcessingAtom,
 } from '../../store';
 import { useI18n } from '../../hooks/useI18n';
 import { getPraatWorker, loadAudioFile, playSound, stopPlayback } from '../../utils/audio';
@@ -24,6 +25,7 @@ export const ObjectsPanel: React.FC = () => {
   const [, setEditorSoundId] = useAtom(editorSoundIdAtom);
   const [, setEditorTextGridId] = useAtom(editorTextGridIdAtom);
   const [, setStatusMessage] = useAtom(statusMessageAtom);
+  const [, setIsProcessing] = useAtom(isProcessingAtom);
 
   const [isDragOver, setIsDragOver] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -35,20 +37,32 @@ export const ObjectsPanel: React.FC = () => {
   const isPitchSelected = singleSelected?.className === 'Pitch';
   const isFormantSelected = singleSelected?.className === 'Formant';
   const isSpectrogramSelected = singleSelected?.className === 'Spectrogram';
+  const isIntensitySelected = singleSelected?.className === 'Intensity';
   const isTextGridSelected = singleSelected?.className === 'TextGrid';
-  const soundInPair = selectedObjects.length === 2 ? selectedObjects.find((o) => o.className === 'Sound') : null;
-  const textGridInPair = selectedObjects.length === 2 ? selectedObjects.find((o) => o.className === 'TextGrid') : null;
+  const isPowerCepstrogramSelected = singleSelected?.className === 'PowerCepstrogram';
+  const isCppSelected = singleSelected?.className === 'CPP';
+  const isLpcSelected = singleSelected?.className === 'LPC';
+  const isKlattGridSelected = singleSelected?.className === 'KlattGrid';
+
+  const soundInPair =
+    selectedObjects.length === 2 ? selectedObjects.find((o) => o.className === 'Sound') : null;
+  const textGridInPair =
+    selectedObjects.length === 2 ? selectedObjects.find((o) => o.className === 'TextGrid') : null;
   const isSoundAndTextGridSelected = Boolean(soundInPair && textGridInPair);
+
+  const artwordInPair =
+    selectedObjects.length === 2 ? selectedObjects.find((o) => o.className === 'Artword') : null;
+  const speakerInPair =
+    selectedObjects.length === 2 ? selectedObjects.find((o) => o.className === 'Speaker') : null;
+  const isArtwordAndSpeakerSelected = Boolean(artwordInPair && speakerInPair);
 
   // Selection handlers
   const handleItemClick = (e: React.MouseEvent, id: PraatId, index: number) => {
     if (e.metaKey || e.ctrlKey) {
-      // Toggle selection
       setSelectedIds((prev) =>
         prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
       );
     } else if (e.shiftKey && selectedIds.length > 0) {
-      // Range selection
       const lastSelectedId = selectedIds[selectedIds.length - 1];
       const lastIndex = objects.findIndex((o) => o.id === lastSelectedId);
       const start = Math.min(lastIndex, index);
@@ -56,7 +70,6 @@ export const ObjectsPanel: React.FC = () => {
       const rangeIds = objects.slice(start, end + 1).map((o) => o.id);
       setSelectedIds(Array.from(new Set([...selectedIds, ...rangeIds])));
     } else {
-      // Single selection
       setSelectedIds([id]);
     }
   };
@@ -71,7 +84,6 @@ export const ObjectsPanel: React.FC = () => {
     }
   };
 
-  // Drag and drop audio files onto panel
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(true);
@@ -134,7 +146,6 @@ export const ObjectsPanel: React.FC = () => {
     }
   };
 
-  // Fixed Bottom Button Handlers
   const handleRemove = async () => {
     if (selectedIds.length === 0) return;
     const worker = getPraatWorker();
@@ -172,6 +183,30 @@ export const ObjectsPanel: React.FC = () => {
           `   Number of channels: ${info.numChannels}`,
           '',
         ].join('\n');
+      } else if (singleSelected.className === 'MFCC') {
+        const mfccInfo = await worker.getMfccInfo(singleSelected.id);
+        infoText = [
+          `Object id: ${singleSelected.id}`,
+          `Object type: MFCC`,
+          `Object name: ${singleSelected.name}`,
+          `Time domain: ${mfccInfo.xmin.toFixed(4)} .. ${mfccInfo.xmax.toFixed(4)} seconds`,
+          `Number of frames: ${mfccInfo.nx}`,
+          `Time step: ${mfccInfo.dx.toFixed(6)} seconds`,
+          `Maximum number of coefficients: ${mfccInfo.maxNumCoefficients}`,
+          '',
+        ].join('\n');
+      } else if (singleSelected.className === 'CPP') {
+        const cppTrack = await worker.getCppTrack(singleSelected.id);
+        const meanCpp = await worker.cppGetMean(singleSelected.id, 0, 0);
+        infoText = [
+          `Object id: ${singleSelected.id}`,
+          `Object type: CPP`,
+          `Object name: ${singleSelected.name}`,
+          `Time domain: ${cppTrack.xmin.toFixed(4)} .. ${cppTrack.xmax.toFixed(4)} seconds`,
+          `Number of frames: ${cppTrack.nx}`,
+          `Mean CPP: ${meanCpp.toFixed(3)} dB`,
+          '',
+        ].join('\n');
       } else {
         const name = await worker.getObjectName(singleSelected.id);
         const className = await worker.getObjectClass(singleSelected.id);
@@ -195,7 +230,6 @@ export const ObjectsPanel: React.FC = () => {
     setInfoOutput((prev) => prev + output);
   };
 
-  // Dynamic Sound Queries
   const handleSoundQuery = async (queryType: string) => {
     if (!singleSelected || singleSelected.className !== 'Sound') return;
     const worker = getPraatWorker();
@@ -227,7 +261,6 @@ export const ObjectsPanel: React.FC = () => {
     }
   };
 
-  // Play Sound handler
   const handlePlay = async () => {
     if (!singleSelected || singleSelected.className !== 'Sound') return;
     try {
@@ -238,6 +271,56 @@ export const ObjectsPanel: React.FC = () => {
       alert(`Playback failed: ${err?.message || err}`);
     } finally {
       setIsPlaying(false);
+    }
+  };
+
+  const handleLpcToFormant = async () => {
+    if (!singleSelected || singleSelected.className !== 'LPC') return;
+    setIsProcessing(true);
+    try {
+      const worker = getPraatWorker();
+      const formantId = await worker.lpcToFormant(singleSelected.id);
+      const name = await worker.getObjectName(formantId);
+      const className = await worker.getObjectClass(formantId);
+      setObjects((prev) => [
+        ...prev,
+        { id: formantId, className, name, createdAt: Date.now() },
+      ]);
+      setSelectedIds([formantId]);
+      setStatusMessage(t.status.formantCalculated);
+    } catch (err: any) {
+      alert(`LPC to Formant failed: ${err?.message || err}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleKlattGridToSound = async () => {
+    if (!singleSelected || singleSelected.className !== 'KlattGrid') return;
+    setIsProcessing(true);
+    try {
+      const worker = getPraatWorker();
+      const soundId = await worker.klattGridToSound(singleSelected.id);
+      const info = await worker.getSoundInfo(soundId);
+      setObjects((prev) => [
+        ...prev,
+        {
+          id: info.id,
+          className: 'Sound',
+          name: info.name,
+          duration: info.duration,
+          sampleRate: info.sampleRate,
+          numChannels: info.numChannels,
+          numSamples: info.numSamples,
+          createdAt: Date.now(),
+        },
+      ]);
+      setSelectedIds([info.id]);
+      setStatusMessage(t.status.soundCreated);
+    } catch (err: any) {
+      alert(`KlattGrid synthesis failed: ${err?.message || err}`);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -252,15 +335,11 @@ export const ObjectsPanel: React.FC = () => {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        {/* Header */}
         <div className="flex h-7 items-center justify-between border-b border-slate-200 bg-slate-100 px-3 font-semibold text-slate-700">
           <span>{t.app.objectsListHeader}</span>
-          <span className="text-[11px] font-normal text-slate-500">
-            {objects.length}
-          </span>
+          <span className="text-[11px] font-normal text-slate-500">{objects.length}</span>
         </div>
 
-        {/* Scrollable Objects List */}
         <div className="flex-1 overflow-y-auto p-1 font-mono text-[11px]">
           {objects.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center p-4 text-center text-slate-400">
@@ -284,7 +363,11 @@ export const ObjectsPanel: React.FC = () => {
                     <span className="w-6 text-right text-slate-400 mr-2 shrink-0">
                       {index + 1}.
                     </span>
-                    <span className={`font-semibold mr-1.5 ${isSelected ? 'text-white' : 'text-blue-700'}`}>
+                    <span
+                      className={`font-semibold mr-1.5 ${
+                        isSelected ? 'text-white' : 'text-blue-700'
+                      }`}
+                    >
                       {obj.className}
                     </span>
                     <span className="truncate">{obj.name}</span>
@@ -295,7 +378,6 @@ export const ObjectsPanel: React.FC = () => {
           )}
         </div>
 
-        {/* Bottom Fixed Buttons matching Praat Layout */}
         <div className="border-t border-slate-300 bg-slate-100 p-2">
           <div className="grid grid-cols-2 gap-1.5 mb-1.5">
             <button
@@ -371,7 +453,7 @@ export const ObjectsPanel: React.FC = () => {
         </div>
 
         <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
-          {!singleSelected && (
+          {!singleSelected && !isSoundAndTextGridSelected && !isArtwordAndSpeakerSelected && (
             <div className="flex h-32 items-center justify-center p-2 text-center text-slate-400 text-xs">
               {selectedObjects.length > 1
                 ? `${selectedObjects.length} objects selected`
@@ -380,7 +462,7 @@ export const ObjectsPanel: React.FC = () => {
           )}
 
           {/* Sound Specific Actions */}
-          {isSoundSelected && (
+          {isSoundSelected && singleSelected && (
             <div className="space-y-1.5">
               <button
                 type="button"
@@ -401,14 +483,20 @@ export const ObjectsPanel: React.FC = () => {
                 {isPlaying ? t.actions.stop : t.actions.play}
               </button>
 
-              <div className="my-1 border-t border-slate-200" />
-
-              {/* Analysis Actions */}
               <button
                 type="button"
-                onClick={() =>
-                  setModal({ type: 'soundToPitch', objectId: singleSelected.id })
-                }
+                onClick={() => setModal({ type: 'drawObject', objectId: singleSelected.id })}
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
+              >
+                {t.actions.draw}
+              </button>
+
+              <div className="my-1 border-t border-slate-200" />
+
+              {/* Core Phonetic Analysis */}
+              <button
+                type="button"
+                onClick={() => setModal({ type: 'soundToPitch', objectId: singleSelected.id })}
                 className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
               >
                 {t.actions.soundToPitch}
@@ -437,8 +525,16 @@ export const ObjectsPanel: React.FC = () => {
               <button
                 type="button"
                 onClick={() =>
-                  setModal({ type: 'soundToTextGrid', objectId: singleSelected.id })
+                  setModal({ type: 'soundToIntensity', objectId: singleSelected.id })
                 }
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
+              >
+                {t.actions.soundToIntensity}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setModal({ type: 'soundToTextGrid', objectId: singleSelected.id })}
                 className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
               >
                 {t.actions.soundToTextGrid}
@@ -446,7 +542,45 @@ export const ObjectsPanel: React.FC = () => {
 
               <div className="my-1 border-t border-slate-200" />
 
-              {/* Sound Queries */}
+              {/* Advanced DSP Modules (dwtools / LPC) */}
+              <button
+                type="button"
+                onClick={() =>
+                  setModal({ type: 'soundToPowerCepstrogram', objectId: singleSelected.id })
+                }
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
+              >
+                {t.actions.soundToPowerCepstrogram}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setModal({ type: 'soundToLpcBurg', objectId: singleSelected.id })}
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
+              >
+                {t.actions.soundToLpcBurg}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setModal({ type: 'soundToMfcc', objectId: singleSelected.id })}
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
+              >
+                {t.actions.soundToMfcc}
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setModal({ type: 'soundToKlattGrid', objectId: singleSelected.id })
+                }
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
+              >
+                {t.actions.soundToKlattGrid}
+              </button>
+
+              <div className="my-1 border-t border-slate-200" />
+
               <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-1">
                 {t.actions.query}
               </div>
@@ -481,9 +615,7 @@ export const ObjectsPanel: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={() =>
-                  setModal({ type: 'soundGetMean', objectId: singleSelected.id })
-                }
+                onClick={() => setModal({ type: 'soundGetMean', objectId: singleSelected.id })}
                 className="w-full rounded px-2 py-0.5 text-left text-slate-700 hover:bg-slate-200 text-[11px]"
               >
                 {t.actions.getMean}
@@ -492,16 +624,14 @@ export const ObjectsPanel: React.FC = () => {
           )}
 
           {/* Pitch Specific Actions */}
-          {isPitchSelected && (
+          {isPitchSelected && singleSelected && (
             <div className="space-y-1.5">
               <button
                 type="button"
-                onClick={() => {
-                  alert('Pitch contour editor will be enabled in Phase 4.');
-                }}
+                onClick={() => setModal({ type: 'drawObject', objectId: singleSelected.id })}
                 className="w-full rounded border border-blue-500 bg-blue-50 px-2.5 py-1.5 text-left font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs"
               >
-                {t.actions.viewAndEdit}
+                {t.actions.draw}
               </button>
 
               <div className="my-1 border-t border-slate-200" />
@@ -512,9 +642,7 @@ export const ObjectsPanel: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() =>
-                  setModal({ type: 'pitchGetMean', objectId: singleSelected.id })
-                }
+                onClick={() => setModal({ type: 'pitchGetMean', objectId: singleSelected.id })}
                 className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
               >
                 {t.actions.pitchGetMean}
@@ -533,37 +661,66 @@ export const ObjectsPanel: React.FC = () => {
           )}
 
           {/* Formant Specific Actions */}
-          {isFormantSelected && (
+          {isFormantSelected && singleSelected && (
             <div className="space-y-1.5">
               <button
                 type="button"
-                onClick={() => {
-                  alert('Formant editor will be enabled in Phase 4.');
-                }}
+                onClick={() =>
+                  setModal({
+                    type: 'drawObject',
+                    objectId: singleSelected.id,
+                    initialValues: { speckle: true },
+                  })
+                }
                 className="w-full rounded border border-blue-500 bg-blue-50 px-2.5 py-1.5 text-left font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs"
               >
-                {t.actions.viewAndEdit}
+                {t.actions.speckle}
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setModal({
+                    type: 'drawObject',
+                    objectId: singleSelected.id,
+                    initialValues: { speckle: false },
+                  })
+                }
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
+              >
+                {t.actions.draw}
               </button>
             </div>
           )}
 
           {/* Spectrogram Specific Actions */}
-          {isSpectrogramSelected && (
+          {isSpectrogramSelected && singleSelected && (
             <div className="space-y-1.5">
               <button
                 type="button"
-                onClick={() => {
-                  alert('Spectrogram editor will be enabled in Phase 4.');
-                }}
+                onClick={() => setModal({ type: 'drawObject', objectId: singleSelected.id })}
                 className="w-full rounded border border-blue-500 bg-blue-50 px-2.5 py-1.5 text-left font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs"
               >
-                {t.actions.viewAndEdit}
+                {t.actions.paint}
+              </button>
+            </div>
+          )}
+
+          {/* Intensity Specific Actions */}
+          {isIntensitySelected && singleSelected && (
+            <div className="space-y-1.5">
+              <button
+                type="button"
+                onClick={() => setModal({ type: 'drawObject', objectId: singleSelected.id })}
+                className="w-full rounded border border-blue-500 bg-blue-50 px-2.5 py-1.5 text-left font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs"
+              >
+                {t.actions.draw}
               </button>
             </div>
           )}
 
           {/* TextGrid Specific Actions */}
-          {isTextGridSelected && (
+          {isTextGridSelected && singleSelected && (
             <div className="space-y-1.5">
               <button
                 type="button"
@@ -574,6 +731,86 @@ export const ObjectsPanel: React.FC = () => {
                 className="w-full rounded border border-blue-500 bg-blue-50 px-2.5 py-1.5 text-left font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs"
               >
                 {t.actions.viewAndEdit}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setModal({ type: 'drawObject', objectId: singleSelected.id })}
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
+              >
+                {t.actions.draw}
+              </button>
+            </div>
+          )}
+
+          {/* PowerCepstrogram Actions (Phase 7) */}
+          {isPowerCepstrogramSelected && singleSelected && (
+            <div className="space-y-1.5">
+              <button
+                type="button"
+                onClick={() =>
+                  setModal({ type: 'powerCepstrogramGetCpps', objectId: singleSelected.id })
+                }
+                className="w-full rounded border border-blue-500 bg-blue-50 px-2.5 py-1.5 text-left font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs"
+              >
+                {t.actions.getCpps}
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setModal({ type: 'powerCepstrogramToCpp', objectId: singleSelected.id })
+                }
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
+              >
+                {t.actions.toCpp}
+              </button>
+            </div>
+          )}
+
+          {/* CPP Actions (Phase 7) */}
+          {isCppSelected && singleSelected && (
+            <div className="space-y-1.5">
+              <button
+                type="button"
+                onClick={() => setModal({ type: 'drawObject', objectId: singleSelected.id })}
+                className="w-full rounded border border-blue-500 bg-blue-50 px-2.5 py-1.5 text-left font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs"
+              >
+                {t.actions.draw}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setModal({ type: 'cppGetMean', objectId: singleSelected.id })}
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
+              >
+                {t.actions.getMean}
+              </button>
+            </div>
+          )}
+
+          {/* LPC Actions (Phase 7) */}
+          {isLpcSelected && singleSelected && (
+            <div className="space-y-1.5">
+              <button
+                type="button"
+                onClick={() => void handleLpcToFormant()}
+                className="w-full rounded border border-blue-500 bg-blue-50 px-2.5 py-1.5 text-left font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs"
+              >
+                {t.actions.toFormant}
+              </button>
+            </div>
+          )}
+
+          {/* KlattGrid Actions (Phase 7) */}
+          {isKlattGridSelected && singleSelected && (
+            <div className="space-y-1.5">
+              <button
+                type="button"
+                onClick={() => void handleKlattGridToSound()}
+                className="w-full rounded border border-blue-600 bg-blue-600 px-2.5 py-1.5 text-left font-semibold text-white hover:bg-blue-700 active:bg-blue-800 shadow-xs"
+              >
+                {t.actions.toSound}
               </button>
             </div>
           )}
@@ -591,6 +828,25 @@ export const ObjectsPanel: React.FC = () => {
                 className="w-full rounded border border-blue-600 bg-blue-600 px-2.5 py-1.5 text-left font-semibold text-white hover:bg-blue-700 active:bg-blue-800 shadow-xs"
               >
                 {t.actions.viewAndEdit}
+              </button>
+            </div>
+          )}
+
+          {/* Artword + Speaker Articulatory Synthesis Actions (Phase 7) */}
+          {isArtwordAndSpeakerSelected && artwordInPair && speakerInPair && (
+            <div className="space-y-1.5">
+              <button
+                type="button"
+                onClick={() =>
+                  setModal({
+                    type: 'artwordSpeakerToSound',
+                    objectId: artwordInPair.id,
+                    initialValues: { speakerId: speakerInPair.id },
+                  })
+                }
+                className="w-full rounded border border-blue-600 bg-blue-600 px-2.5 py-1.5 text-left font-semibold text-white hover:bg-blue-700 active:bg-blue-800 shadow-xs"
+              >
+                {t.actions.artwordSpeakerToSound}
               </button>
             </div>
           )}
