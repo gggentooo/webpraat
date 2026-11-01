@@ -57,6 +57,9 @@ int         praat_bridge_textgrid_set_point_text(int textgrid_id, int tier_numbe
 // Scripting & Console output
 const char* praat_bridge_execute_script(const char* script_text);
 const char* praat_bridge_get_info_output(void);
+void        praat_bridge_clear_info_output(void);
+const char* praat_bridge_get_objects_json(void);
+int         praat_bridge_select_object(int id);
 
 #ifdef __cplusplus
 }

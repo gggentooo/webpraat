@@ -231,6 +231,25 @@ export const en = {
     playSelection: 'Play selection',
     playWindow: 'Play visible',
   },
+
+  // Script Console
+  script: {
+    title: 'Praat Script',
+    run: 'Run',
+    running: 'Running...',
+    clear: 'Clear',
+    clearInfo: 'Clear Info',
+    samples: 'Sample scripts...',
+    sampleArithmetic: 'Loop & Math calculations',
+    sampleProcedures: 'Procedures & Strings',
+    sampleVariables: 'Batch Variable Operations',
+    openScript: 'Open...',
+    saveScript: 'Save...',
+    shortcutHint: 'Ctrl+Enter to run',
+    scriptCompleted: 'Script executed successfully',
+    scriptError: 'Script execution failed',
+    closeTab: 'Close Script',
+  },
 };
 
 export type LocaleDictionary = typeof en;

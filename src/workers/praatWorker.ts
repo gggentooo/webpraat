@@ -6,6 +6,7 @@
 
 import * as Comlink from 'comlink';
 import type { TextGridData } from '../types/praat';
+import { serializeTextGrid } from '../utils/textgrid';
 import type {
   PraatWorkerApi,
   SoundInfo,
@@ -56,7 +57,6 @@ let praat_bridge_pitch_get_value_at_time: (id: number, time: number) => number;
 let praat_bridge_create_textgrid: (tmin: number, tmax: number, tier_names: string, point_tiers: string, name: string) => number;
 let praat_bridge_sound_to_textgrid: (sound_id: number, tier_names: string, point_tiers: string) => number;
 let praat_bridge_textgrid_to_json: (id: number) => string;
-let praat_bridge_textgrid_save_to_file: (id: number, path: string) => number;
 let praat_bridge_textgrid_read_from_file: (path: string, name: string) => number;
 let praat_bridge_textgrid_insert_boundary: (id: number, tier_num: number, time: number) => number;
 let praat_bridge_textgrid_remove_boundary_at_time: (id: number, tier_num: number, time: number) => number;
@@ -65,6 +65,9 @@ let praat_bridge_textgrid_insert_point: (id: number, tier_num: number, time: num
 let praat_bridge_textgrid_set_point_text: (id: number, tier_num: number, point_num: number, text: string) => number;
 let praat_bridge_execute_script: (text: string) => string;
 let praat_bridge_get_info_output: () => string;
+let praat_bridge_clear_info_output: () => void;
+let praat_bridge_get_objects_json: () => string;
+let praat_bridge_select_object: (id: number) => number;
 
 async function ensureInit(): Promise<boolean> {
   if (initialized && Module) return true;
@@ -111,7 +114,6 @@ async function ensureInit(): Promise<boolean> {
   praat_bridge_create_textgrid = Module.cwrap('praat_bridge_create_textgrid', 'number', ['number', 'number', 'string', 'string', 'string']);
   praat_bridge_sound_to_textgrid = Module.cwrap('praat_bridge_sound_to_textgrid', 'number', ['number', 'string', 'string']);
   praat_bridge_textgrid_to_json = Module.cwrap('praat_bridge_textgrid_to_json', 'string', ['number']);
-  praat_bridge_textgrid_save_to_file = Module.cwrap('praat_bridge_textgrid_save_to_file', 'number', ['number', 'string']);
   praat_bridge_textgrid_read_from_file = Module.cwrap('praat_bridge_textgrid_read_from_file', 'number', ['string', 'string']);
   praat_bridge_textgrid_insert_boundary = Module.cwrap('praat_bridge_textgrid_insert_boundary', 'number', ['number', 'number', 'number']);
   praat_bridge_textgrid_remove_boundary_at_time = Module.cwrap('praat_bridge_textgrid_remove_boundary_at_time', 'number', ['number', 'number', 'number']);
@@ -120,6 +122,9 @@ async function ensureInit(): Promise<boolean> {
   praat_bridge_textgrid_set_point_text = Module.cwrap('praat_bridge_textgrid_set_point_text', 'number', ['number', 'number', 'number', 'string']);
   praat_bridge_execute_script = Module.cwrap('praat_bridge_execute_script', 'string', ['string']);
   praat_bridge_get_info_output = Module.cwrap('praat_bridge_get_info_output', 'string', []);
+  praat_bridge_clear_info_output = Module.cwrap('praat_bridge_clear_info_output', null, []);
+  praat_bridge_get_objects_json = Module.cwrap('praat_bridge_get_objects_json', 'string', []);
+  praat_bridge_select_object = Module.cwrap('praat_bridge_select_object', 'number', ['number']);
 
   const res = praat_bridge_init();
   if (res !== 1) {
@@ -487,20 +492,15 @@ export const praatWorkerApi: PraatWorkerApi = {
 
   async exportTextGridAsText(textgridId: number): Promise<string> {
     await ensureInit();
-    const tempPath = `/tmp/export_tg_${textgridId}_${Date.now()}.TextGrid`;
-    const ok = praat_bridge_textgrid_save_to_file(textgridId, tempPath);
-    if (!ok) throw new Error(`Failed to export TextGrid ${textgridId} to file`);
-    try {
-      return Module.FS.readFile(tempPath, { encoding: 'utf8' });
-    } finally {
-      try { Module.FS.unlink(tempPath); } catch {}
-    }
+    const data = await this.getTextGridData(textgridId);
+    return serializeTextGrid(data);
   },
 
   async readTextGridFromText(content: string, name?: string): Promise<number> {
     await ensureInit();
     const tempPath = `/tmp/import_tg_${Date.now()}.TextGrid`;
-    Module.FS.writeFile(tempPath, content);
+    const encoded = new TextEncoder().encode(content);
+    Module.FS.writeFile(tempPath, encoded);
     try {
       const id = praat_bridge_textgrid_read_from_file(tempPath, name ?? 'imported_grid');
       if (id <= 0) throw new Error('Failed to parse and import TextGrid file');
@@ -562,6 +562,27 @@ export const praatWorkerApi: PraatWorkerApi = {
   async getInfoOutput(): Promise<string> {
     await ensureInit();
     return praat_bridge_get_info_output();
+  },
+
+  async clearInfoOutput(): Promise<void> {
+    await ensureInit();
+    praat_bridge_clear_info_output();
+  },
+
+  async getObjectsJson(): Promise<Array<{ id: number; className: string; name: string; duration?: number; sampleRate?: number; numChannels?: number; numSamples?: number }>> {
+    await ensureInit();
+    const jsonStr = praat_bridge_get_objects_json();
+    if (!jsonStr) return [];
+    try {
+      return JSON.parse(jsonStr);
+    } catch {
+      return [];
+    }
+  },
+
+  async selectObject(id: number): Promise<boolean> {
+    await ensureInit();
+    return praat_bridge_select_object(id) === 1;
   },
 };
 

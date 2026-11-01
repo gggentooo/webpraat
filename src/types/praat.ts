@@ -19,7 +19,7 @@ export interface PraatObject {
   createdAt?: number;
 }
 
-export type EditorTabType = 'objects' | 'soundEditor' | 'textGridEditor' | 'picture';
+export type EditorTabType = 'objects' | 'soundEditor' | 'textGridEditor' | 'picture' | 'script';
 
 export interface EditorTab {
   id: string;

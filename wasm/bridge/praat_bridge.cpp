@@ -24,6 +24,35 @@
 // Object table store
 static std::unordered_map<int, autoThing> g_objectTable;
 static int g_nextId = 1;
+static std::string g_infoAccumulator;
+
+static int allocate_id() {
+    if (theCurrentPraatObjects) {
+        return (int)(++ theCurrentPraatObjects -> sequentialUniqueIdOfLatestObjectInList);
+    }
+    return g_nextId++;
+}
+
+static void s_webPraatInfoProc(conststring32 message) {
+    if (message) {
+        g_infoAccumulator += Melder_peek32to8(message);
+    }
+}
+
+static Thing get_object(int id) {
+    if (theCurrentPraatObjects) {
+        for (integer i = 1; i <= theCurrentPraatObjects -> n; ++i) {
+            if (theCurrentPraatObjects -> list [i]. id == id && theCurrentPraatObjects -> list [i]. object) {
+                return theCurrentPraatObjects -> list [i]. object;
+            }
+        }
+    }
+    auto it = g_objectTable.find(id);
+    if (it != g_objectTable.end() && it->second) {
+        return it->second.get();
+    }
+    return nullptr;
+}
 
 extern "C" {
 
@@ -33,6 +62,8 @@ int praat_bridge_init(void) {
         if (s_initialized) return 1;
 
         praatlib_init();
+        MelderConsole_init();
+        Melder_setInformationProc(s_webPraatInfoProc);
         Thing_recognizeClassesByName(
             classSound,
             classPitch,
@@ -41,7 +72,9 @@ int praat_bridge_init(void) {
             classIntensity,
             classTextGrid,
             classIntervalTier,
-            classTextTier
+            classTextTier,
+            classTextInterval,
+            classTextPoint
         );
 
         s_initialized = true;
@@ -73,7 +106,7 @@ int praat_bridge_create_sound(const double* samples, int n, int channels, double
             }
         }
 
-        int id = g_nextId++;
+        int id = allocate_id();
         g_objectTable[id] = sound.move();
         return id;
     } catch (MelderError) {
@@ -108,7 +141,7 @@ int praat_bridge_sound_read_from_memory(const unsigned char* buffer, int length,
             Thing_setName(sound.get(), U"sound");
         }
 
-        int id = g_nextId++;
+        int id = allocate_id();
         g_objectTable[id] = sound.move();
         return id;
     } catch (MelderError) {
@@ -118,6 +151,14 @@ int praat_bridge_sound_read_from_memory(const unsigned char* buffer, int length,
 }
 
 void praat_bridge_destroy_object(int id) {
+    if (theCurrentPraatObjects) {
+        for (integer i = 1; i <= theCurrentPraatObjects -> n; ++i) {
+            if (theCurrentPraatObjects -> list [i]. id == id) {
+                praat_removeObject(i);
+                return;
+            }
+        }
+    }
     auto it = g_objectTable.find(id);
     if (it != g_objectTable.end()) {
         g_objectTable.erase(it);
@@ -125,61 +166,63 @@ void praat_bridge_destroy_object(int id) {
 }
 
 int praat_bridge_get_object_count(void) {
-    return (int)g_objectTable.size();
+    int count = theCurrentPraatObjects ? (int)theCurrentPraatObjects -> n : 0;
+    count += (int)g_objectTable.size();
+    return count;
 }
 
 const char* praat_bridge_get_object_name(int id) {
     static std::string s_name;
-    auto it = g_objectTable.find(id);
-    if (it == g_objectTable.end() || !it->second) return "";
+    Thing obj = get_object(id);
+    if (!obj) return "";
 
-    conststring32 name32 = Thing_getName(it->second.get());
+    conststring32 name32 = Thing_getName(obj);
     s_name = name32 ? Melder_peek32to8(name32) : "";
     return s_name.c_str();
 }
 
 const char* praat_bridge_get_object_class(int id) {
     static std::string s_class;
-    auto it = g_objectTable.find(id);
-    if (it == g_objectTable.end() || !it->second) return "";
+    Thing obj = get_object(id);
+    if (!obj) return "";
 
-    conststring32 class32 = Thing_className(it->second.get());
+    conststring32 class32 = Thing_className(obj);
     s_class = class32 ? Melder_peek32to8(class32) : "";
     return s_class.c_str();
 }
 
 double praat_bridge_sound_get_duration(int sound_id) {
-    auto it = g_objectTable.find(sound_id);
-    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classSound)) return 0.0;
-    Sound sound = (Sound)it->second.get();
+    Thing obj = get_object(sound_id);
+    if (!obj || !Thing_isa(obj, classSound)) return 0.0;
+    Sound sound = (Sound)obj;
     return sound->xmax - sound->xmin;
 }
 
 double praat_bridge_sound_get_sample_rate(int sound_id) {
-    auto it = g_objectTable.find(sound_id);
-    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classSound)) return 0.0;
-    Sound sound = (Sound)it->second.get();
+    Thing obj = get_object(sound_id);
+    if (!obj || !Thing_isa(obj, classSound)) return 0.0;
+    Sound sound = (Sound)obj;
     return sound->dx > 0.0 ? 1.0 / sound->dx : 0.0;
 }
 
 int praat_bridge_sound_get_num_samples(int sound_id) {
-    auto it = g_objectTable.find(sound_id);
-    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classSound)) return 0;
-    Sound sound = (Sound)it->second.get();
+    Thing obj = get_object(sound_id);
+    if (!obj || !Thing_isa(obj, classSound)) return 0;
+    Sound sound = (Sound)obj;
     return (int)sound->nx;
 }
 
 int praat_bridge_sound_get_num_channels(int sound_id) {
-    auto it = g_objectTable.find(sound_id);
-    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classSound)) return 0;
-    Sound sound = (Sound)it->second.get();
+    Thing obj = get_object(sound_id);
+    if (!obj || !Thing_isa(obj, classSound)) return 0;
+    Sound sound = (Sound)obj;
     return (int)sound->ny;
 }
 
 int praat_bridge_sound_get_channel_samples(int sound_id, int channel, double* dest, int max_samples) {
-    auto it = g_objectTable.find(sound_id);
-    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classSound)) return 0;
-    Sound sound = (Sound)it->second.get();
+    Thing obj = get_object(sound_id);
+    if (!obj || !Thing_isa(obj, classSound)) return 0;
+    Sound sound = (Sound)obj;
     if (channel < 1 || channel > sound->ny || !dest || max_samples <= 0) return 0;
 
     int count = (int)sound->nx;
@@ -192,9 +235,9 @@ int praat_bridge_sound_get_channel_samples(int sound_id, int channel, double* de
 }
 
 int praat_bridge_sound_save_as_wav_file(int sound_id, const char* path) {
-    auto it = g_objectTable.find(sound_id);
-    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classSound)) return 0;
-    Sound sound = (Sound)it->second.get();
+    Thing obj = get_object(sound_id);
+    if (!obj || !Thing_isa(obj, classSound)) return 0;
+    Sound sound = (Sound)obj;
     if (!path || path[0] == '\0') return 0;
 
     try {
@@ -219,9 +262,9 @@ int praat_bridge_sound_save_as_wav_file(int sound_id, const char* path) {
 }
 
 int praat_bridge_sound_to_pitch(int sound_id, double time_step, double pitch_floor, double pitch_ceiling) {
-    auto it = g_objectTable.find(sound_id);
-    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classSound)) return 0;
-    Sound sound = (Sound)it->second.get();
+    Thing obj = get_object(sound_id);
+    if (!obj || !Thing_isa(obj, classSound)) return 0;
+    Sound sound = (Sound)obj;
 
     if (pitch_floor <= 0.0) pitch_floor = 75.0;
     if (pitch_ceiling <= 0.0) pitch_ceiling = 600.0;
@@ -232,7 +275,7 @@ int praat_bridge_sound_to_pitch(int sound_id, double time_step, double pitch_flo
 
         Thing_setName(pitch.get(), Melder_cat(Thing_getName(sound), U"_pitch"));
 
-        int id = g_nextId++;
+        int id = allocate_id();
         g_objectTable[id] = pitch.move();
         return id;
     } catch (MelderError) {
@@ -242,9 +285,9 @@ int praat_bridge_sound_to_pitch(int sound_id, double time_step, double pitch_flo
 }
 
 int praat_bridge_sound_to_formant(int sound_id, double time_step, int n_formants, double max_formant, double window_length) {
-    auto it = g_objectTable.find(sound_id);
-    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classSound)) return 0;
-    Sound sound = (Sound)it->second.get();
+    Thing obj = get_object(sound_id);
+    if (!obj || !Thing_isa(obj, classSound)) return 0;
+    Sound sound = (Sound)obj;
 
     if (n_formants <= 0) n_formants = 5;
     if (max_formant <= 0.0) max_formant = 5500.0;
@@ -256,7 +299,7 @@ int praat_bridge_sound_to_formant(int sound_id, double time_step, int n_formants
 
         Thing_setName(formant.get(), Melder_cat(Thing_getName(sound), U"_formant"));
 
-        int id = g_nextId++;
+        int id = allocate_id();
         g_objectTable[id] = formant.move();
         return id;
     } catch (MelderError) {
@@ -266,9 +309,9 @@ int praat_bridge_sound_to_formant(int sound_id, double time_step, int n_formants
 }
 
 int praat_bridge_sound_to_spectrogram(int sound_id, double window_length, double max_freq, double time_step, double window_shape) {
-    auto it = g_objectTable.find(sound_id);
-    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classSound)) return 0;
-    Sound sound = (Sound)it->second.get();
+    Thing obj = get_object(sound_id);
+    if (!obj || !Thing_isa(obj, classSound)) return 0;
+    Sound sound = (Sound)obj;
 
     if (window_length <= 0.0) window_length = 0.005;
     if (max_freq <= 0.0) max_freq = 5000.0;
@@ -285,7 +328,7 @@ int praat_bridge_sound_to_spectrogram(int sound_id, double window_length, double
 
         Thing_setName(spectro.get(), Melder_cat(Thing_getName(sound), U"_spectrogram"));
 
-        int id = g_nextId++;
+        int id = allocate_id();
         g_objectTable[id] = spectro.move();
         return id;
     } catch (MelderError) {
@@ -295,9 +338,9 @@ int praat_bridge_sound_to_spectrogram(int sound_id, double window_length, double
 }
 
 int praat_bridge_sound_to_intensity(int sound_id, double pitch_floor, double time_step, int subtract_mean) {
-    auto it = g_objectTable.find(sound_id);
-    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classSound)) return 0;
-    Sound sound = (Sound)it->second.get();
+    Thing obj = get_object(sound_id);
+    if (!obj || !Thing_isa(obj, classSound)) return 0;
+    Sound sound = (Sound)obj;
 
     if (pitch_floor <= 0.0) pitch_floor = 100.0;
     try {
@@ -306,7 +349,7 @@ int praat_bridge_sound_to_intensity(int sound_id, double pitch_floor, double tim
 
         Thing_setName(intensity.get(), Melder_cat(Thing_getName(sound), U"_intensity"));
 
-        int id = g_nextId++;
+        int id = allocate_id();
         g_objectTable[id] = intensity.move();
         return id;
     } catch (MelderError) {
@@ -317,9 +360,9 @@ int praat_bridge_sound_to_intensity(int sound_id, double pitch_floor, double tim
 
 int praat_bridge_spectrogram_get_info(int spectro_id, double* out_info) {
     if (!out_info) return 0;
-    auto it = g_objectTable.find(spectro_id);
-    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classSpectrogram)) return 0;
-    Spectrogram spectro = (Spectrogram)it->second.get();
+    Thing obj = get_object(spectro_id);
+    if (!obj || !Thing_isa(obj, classSpectrogram)) return 0;
+    Spectrogram spectro = (Spectrogram)obj;
 
     out_info[0] = spectro->xmin;
     out_info[1] = spectro->xmax;
@@ -336,9 +379,9 @@ int praat_bridge_spectrogram_get_info(int spectro_id, double* out_info) {
 
 int praat_bridge_spectrogram_get_matrix(int spectro_id, double* out_data) {
     if (!out_data) return 0;
-    auto it = g_objectTable.find(spectro_id);
-    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classSpectrogram)) return 0;
-    Spectrogram spectro = (Spectrogram)it->second.get();
+    Thing obj = get_object(spectro_id);
+    if (!obj || !Thing_isa(obj, classSpectrogram)) return 0;
+    Spectrogram spectro = (Spectrogram)obj;
 
     integer nx = spectro->nx;
     integer ny = spectro->ny;
@@ -352,9 +395,9 @@ int praat_bridge_spectrogram_get_matrix(int spectro_id, double* out_data) {
 
 int praat_bridge_pitch_get_info(int pitch_id, double* out_info) {
     if (!out_info) return 0;
-    auto it = g_objectTable.find(pitch_id);
-    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classPitch)) return 0;
-    Pitch pitch = (Pitch)it->second.get();
+    Thing obj = get_object(pitch_id);
+    if (!obj || !Thing_isa(obj, classPitch)) return 0;
+    Pitch pitch = (Pitch)obj;
 
     out_info[0] = pitch->xmin;
     out_info[1] = pitch->xmax;
@@ -367,9 +410,9 @@ int praat_bridge_pitch_get_info(int pitch_id, double* out_info) {
 
 int praat_bridge_pitch_get_frames(int pitch_id, double* out_frequencies) {
     if (!out_frequencies) return 0;
-    auto it = g_objectTable.find(pitch_id);
-    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classPitch)) return 0;
-    Pitch pitch = (Pitch)it->second.get();
+    Thing obj = get_object(pitch_id);
+    if (!obj || !Thing_isa(obj, classPitch)) return 0;
+    Pitch pitch = (Pitch)obj;
 
     for (integer i = 1; i <= pitch->nx; ++i) {
         double f = 0.0;
@@ -386,9 +429,9 @@ int praat_bridge_pitch_get_frames(int pitch_id, double* out_frequencies) {
 
 int praat_bridge_formant_get_info(int formant_id, double* out_info) {
     if (!out_info) return 0;
-    auto it = g_objectTable.find(formant_id);
-    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classFormant)) return 0;
-    Formant formant = (Formant)it->second.get();
+    Thing obj = get_object(formant_id);
+    if (!obj || !Thing_isa(obj, classFormant)) return 0;
+    Formant formant = (Formant)obj;
 
     out_info[0] = formant->xmin;
     out_info[1] = formant->xmax;
@@ -401,9 +444,9 @@ int praat_bridge_formant_get_info(int formant_id, double* out_info) {
 
 int praat_bridge_formant_get_frames(int formant_id, double* out_frequencies) {
     if (!out_frequencies) return 0;
-    auto it = g_objectTable.find(formant_id);
-    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classFormant)) return 0;
-    Formant formant = (Formant)it->second.get();
+    Thing obj = get_object(formant_id);
+    if (!obj || !Thing_isa(obj, classFormant)) return 0;
+    Formant formant = (Formant)obj;
 
     integer maxP = formant->maxnFormants;
     for (integer i = 1; i <= formant->nx; ++i) {
@@ -418,9 +461,9 @@ int praat_bridge_formant_get_frames(int formant_id, double* out_frequencies) {
 
 int praat_bridge_intensity_get_info(int intensity_id, double* out_info) {
     if (!out_info) return 0;
-    auto it = g_objectTable.find(intensity_id);
-    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classIntensity)) return 0;
-    Intensity intensity = (Intensity)it->second.get();
+    Thing obj = get_object(intensity_id);
+    if (!obj || !Thing_isa(obj, classIntensity)) return 0;
+    Intensity intensity = (Intensity)obj;
 
     out_info[0] = intensity->xmin;
     out_info[1] = intensity->xmax;
@@ -432,9 +475,9 @@ int praat_bridge_intensity_get_info(int intensity_id, double* out_info) {
 
 int praat_bridge_intensity_get_frames(int intensity_id, double* out_values) {
     if (!out_values) return 0;
-    auto it = g_objectTable.find(intensity_id);
-    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classIntensity)) return 0;
-    Intensity intensity = (Intensity)it->second.get();
+    Thing obj = get_object(intensity_id);
+    if (!obj || !Thing_isa(obj, classIntensity)) return 0;
+    Intensity intensity = (Intensity)obj;
 
     for (integer i = 1; i <= intensity->nx; ++i) {
         out_values[i - 1] = intensity->z[1][i];
@@ -443,9 +486,9 @@ int praat_bridge_intensity_get_frames(int intensity_id, double* out_values) {
 }
 
 double praat_bridge_pitch_get_mean(int pitch_id, double tmin, double tmax) {
-    auto it = g_objectTable.find(pitch_id);
-    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classPitch)) return 0.0;
-    Pitch pitch = (Pitch)it->second.get();
+    Thing obj = get_object(pitch_id);
+    if (!obj || !Thing_isa(obj, classPitch)) return 0.0;
+    Pitch pitch = (Pitch)obj;
 
     try {
         return Pitch_getMean(pitch, tmin, tmax, kPitch_unit::HERTZ);
@@ -456,9 +499,9 @@ double praat_bridge_pitch_get_mean(int pitch_id, double tmin, double tmax) {
 }
 
 double praat_bridge_pitch_get_value_at_time(int pitch_id, double time) {
-    auto it = g_objectTable.find(pitch_id);
-    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classPitch)) return 0.0;
-    Pitch pitch = (Pitch)it->second.get();
+    Thing obj = get_object(pitch_id);
+    if (!obj || !Thing_isa(obj, classPitch)) return 0.0;
+    Pitch pitch = (Pitch)obj;
 
     try {
         return Pitch_getValueAtTime(pitch, time, kPitch_unit::HERTZ, true);
@@ -482,7 +525,7 @@ int praat_bridge_create_textgrid(double tmin, double tmax, const char* tier_name
             Thing_setName(grid.get(), U"grid");
         }
 
-        int id = g_nextId++;
+        int id = allocate_id();
         g_objectTable[id] = grid.move();
         return id;
     } catch (MelderError) {
@@ -492,9 +535,9 @@ int praat_bridge_create_textgrid(double tmin, double tmax, const char* tier_name
 }
 
 int praat_bridge_sound_to_textgrid(int sound_id, const char* tier_names, const char* point_tiers) {
-    auto it = g_objectTable.find(sound_id);
-    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classSound)) return 0;
-    Sound sound = (Sound)it->second.get();
+    Thing obj = get_object(sound_id);
+    if (!obj || !Thing_isa(obj, classSound)) return 0;
+    Sound sound = (Sound)obj;
 
     try {
         autostring32 tierNames32 = Melder_8to32_e(tier_names ? tier_names : "sentence");
@@ -504,7 +547,7 @@ int praat_bridge_sound_to_textgrid(int sound_id, const char* tier_names, const c
 
         Thing_setName(grid.get(), Melder_cat(Thing_getName(sound), U"_grid"));
 
-        int id = g_nextId++;
+        int id = allocate_id();
         g_objectTable[id] = grid.move();
         return id;
     } catch (MelderError) {
@@ -515,9 +558,9 @@ int praat_bridge_sound_to_textgrid(int sound_id, const char* tier_names, const c
 
 const char* praat_bridge_textgrid_to_json(int textgrid_id) {
     static std::string s_json;
-    auto it = g_objectTable.find(textgrid_id);
-    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classTextGrid)) return "{}";
-    TextGrid grid = (TextGrid)it->second.get();
+    Thing obj = get_object(textgrid_id);
+    if (!obj || !Thing_isa(obj, classTextGrid)) return "{}";
+    TextGrid grid = (TextGrid)obj;
 
     std::ostringstream ss;
     ss << "{\"xmin\":" << grid->xmin << ",\"xmax\":" << grid->xmax << ",\"tiers\":[";
@@ -588,9 +631,9 @@ const char* praat_bridge_textgrid_to_json(int textgrid_id) {
 
 int praat_bridge_textgrid_save_to_file(int textgrid_id, const char* path) {
     if (!path || path[0] == '\0') return 0;
-    auto it = g_objectTable.find(textgrid_id);
-    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classTextGrid)) return 0;
-    TextGrid grid = (TextGrid)it->second.get();
+    Thing obj = get_object(textgrid_id);
+    if (!obj || !Thing_isa(obj, classTextGrid)) return 0;
+    TextGrid grid = (TextGrid)obj;
 
     try {
         structMelderFile file;
@@ -618,7 +661,7 @@ int praat_bridge_textgrid_read_from_file(const char* path, const char* name) {
             Thing_setName(obj.get(), Melder_8to32_e(name).get());
         }
 
-        int id = g_nextId++;
+        int id = allocate_id();
         g_objectTable[id] = obj.move();
         return id;
     } catch (MelderError) {
@@ -628,9 +671,9 @@ int praat_bridge_textgrid_read_from_file(const char* path, const char* name) {
 }
 
 int praat_bridge_textgrid_insert_boundary(int textgrid_id, int tier_number, double time) {
-    auto it = g_objectTable.find(textgrid_id);
-    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classTextGrid)) return 0;
-    TextGrid grid = (TextGrid)it->second.get();
+    Thing obj = get_object(textgrid_id);
+    if (!obj || !Thing_isa(obj, classTextGrid)) return 0;
+    TextGrid grid = (TextGrid)obj;
 
     try {
         TextGrid_insertBoundary(grid, tier_number, time);
@@ -642,9 +685,9 @@ int praat_bridge_textgrid_insert_boundary(int textgrid_id, int tier_number, doub
 }
 
 int praat_bridge_textgrid_remove_boundary_at_time(int textgrid_id, int tier_number, double time) {
-    auto it = g_objectTable.find(textgrid_id);
-    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classTextGrid)) return 0;
-    TextGrid grid = (TextGrid)it->second.get();
+    Thing obj = get_object(textgrid_id);
+    if (!obj || !Thing_isa(obj, classTextGrid)) return 0;
+    TextGrid grid = (TextGrid)obj;
 
     try {
         TextGrid_removeBoundaryAtTime(grid, tier_number, time);
@@ -656,9 +699,9 @@ int praat_bridge_textgrid_remove_boundary_at_time(int textgrid_id, int tier_numb
 }
 
 int praat_bridge_textgrid_set_interval_text(int textgrid_id, int tier_number, int interval_number, const char* text) {
-    auto it = g_objectTable.find(textgrid_id);
-    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classTextGrid)) return 0;
-    TextGrid grid = (TextGrid)it->second.get();
+    Thing obj = get_object(textgrid_id);
+    if (!obj || !Thing_isa(obj, classTextGrid)) return 0;
+    TextGrid grid = (TextGrid)obj;
 
     try {
         TextGrid_setIntervalText(grid, tier_number, interval_number, Melder_8to32_e(text ? text : "").get());
@@ -670,9 +713,9 @@ int praat_bridge_textgrid_set_interval_text(int textgrid_id, int tier_number, in
 }
 
 int praat_bridge_textgrid_insert_point(int textgrid_id, int tier_number, double time, const char* mark) {
-    auto it = g_objectTable.find(textgrid_id);
-    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classTextGrid)) return 0;
-    TextGrid grid = (TextGrid)it->second.get();
+    Thing obj = get_object(textgrid_id);
+    if (!obj || !Thing_isa(obj, classTextGrid)) return 0;
+    TextGrid grid = (TextGrid)obj;
 
     try {
         TextGrid_insertPoint(grid, tier_number, time, Melder_8to32_e(mark ? mark : "").get());
@@ -684,9 +727,9 @@ int praat_bridge_textgrid_insert_point(int textgrid_id, int tier_number, double 
 }
 
 int praat_bridge_textgrid_set_point_text(int textgrid_id, int tier_number, int point_number, const char* text) {
-    auto it = g_objectTable.find(textgrid_id);
-    if (it == g_objectTable.end() || !it->second || !Thing_isa(it->second.get(), classTextGrid)) return 0;
-    TextGrid grid = (TextGrid)it->second.get();
+    Thing obj = get_object(textgrid_id);
+    if (!obj || !Thing_isa(obj, classTextGrid)) return 0;
+    TextGrid grid = (TextGrid)obj;
 
     try {
         TextGrid_setPointText(grid, tier_number, point_number, Melder_8to32_e(text ? text : "").get());
@@ -702,12 +745,27 @@ const char* praat_bridge_execute_script(const char* script_text) {
     if (!script_text || script_text[0] == '\0') return "";
 
     try {
+        g_infoAccumulator.clear();
+        Melder_clearInfo();
         autostring32 script32 = Melder_8to32_e(script_text);
         praat_executeScriptFromText(script32.get());
-        s_out = "OK";
+
+        conststring32 info32 = Melder_getInfo();
+        std::string infoStr = (info32 && info32[0] != '\0') ? Melder_peek32to8(info32) : "";
+        if (!infoStr.empty()) {
+            s_out = infoStr;
+        } else {
+            s_out = g_infoAccumulator;
+        }
     } catch (MelderError) {
-        s_out = Melder_peek32to8(Melder_getError());
+        conststring32 err = Melder_getError();
+        std::string errMsg = err ? Melder_peek32to8(err) : "Script error";
+        s_out = "Error: " + errMsg;
         Melder_clearError();
+    } catch (const std::exception& e) {
+        s_out = std::string("Error: ") + e.what();
+    } catch (...) {
+        s_out = "Error: Unknown error during script execution";
     }
     return s_out.c_str();
 }
@@ -715,8 +773,97 @@ const char* praat_bridge_execute_script(const char* script_text) {
 const char* praat_bridge_get_info_output(void) {
     static std::string s_info;
     conststring32 info32 = Melder_getInfo();
-    s_info = info32 ? Melder_peek32to8(info32) : "";
+    if (info32 && info32[0] != '\0') {
+        s_info = Melder_peek32to8(info32);
+    } else {
+        s_info = g_infoAccumulator;
+    }
     return s_info.c_str();
+}
+
+void praat_bridge_clear_info_output(void) {
+    g_infoAccumulator.clear();
+    Melder_clearInfo();
+}
+
+const char* praat_bridge_get_objects_json(void) {
+    static std::string s_json;
+    std::ostringstream oss;
+    oss << "[";
+
+    bool first = true;
+    if (theCurrentPraatObjects) {
+        for (integer i = 1; i <= theCurrentPraatObjects -> n; ++i) {
+            Thing obj = theCurrentPraatObjects -> list [i]. object;
+            if (!obj) continue;
+
+            int id = (int)theCurrentPraatObjects -> list [i]. id;
+            const char* className = Melder_peek32to8(Thing_className(obj));
+            const char* name = Melder_peek32to8(Thing_getName(obj));
+
+            if (!first) oss << ",";
+            first = false;
+
+            oss << "{\"id\":" << id
+                << ",\"className\":\"" << (className ? className : "") << "\""
+                << ",\"name\":\"" << (name ? name : "") << "\"";
+
+            if (Thing_isa(obj, classSound)) {
+                Sound s = (Sound)obj;
+                double duration = s->xmax - s->xmin;
+                double fs = s->dx > 0.0 ? 1.0 / s->dx : 0.0;
+                oss << ",\"duration\":" << duration
+                    << ",\"sampleRate\":" << fs
+                    << ",\"numChannels\":" << s->ny
+                    << ",\"numSamples\":" << (int)s->nx;
+            }
+
+            oss << "}";
+        }
+    }
+
+    for (const auto& pair : g_objectTable) {
+        if (!pair.second) continue;
+        Thing obj = pair.second.get();
+        int id = pair.first;
+        const char* className = Melder_peek32to8(Thing_className(obj));
+        const char* name = Melder_peek32to8(Thing_getName(obj));
+
+        if (!first) oss << ",";
+        first = false;
+
+        oss << "{\"id\":" << id
+            << ",\"className\":\"" << (className ? className : "") << "\""
+            << ",\"name\":\"" << (name ? name : "") << "\"";
+
+        if (Thing_isa(obj, classSound)) {
+            Sound s = (Sound)obj;
+            double duration = s->xmax - s->xmin;
+            double fs = s->dx > 0.0 ? 1.0 / s->dx : 0.0;
+            oss << ",\"duration\":" << duration
+                << ",\"sampleRate\":" << fs
+                << ",\"numChannels\":" << s->ny
+                << ",\"numSamples\":" << (int)s->nx;
+        }
+
+        oss << "}";
+    }
+
+    oss << "]";
+    s_json = oss.str();
+    return s_json.c_str();
+}
+
+int praat_bridge_select_object(int id) {
+    if (!theCurrentPraatObjects) return 0;
+    praat_deselectAll();
+    for (integer i = 1; i <= theCurrentPraatObjects -> n; ++i) {
+        if (theCurrentPraatObjects -> list [i]. id == id) {
+            praat_select(i);
+            return 1;
+        }
+    }
+    return 0;
 }
 
 }

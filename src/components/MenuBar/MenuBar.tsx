@@ -9,6 +9,8 @@ import {
   singleSelectedTextGridAtom,
   statusMessageAtom,
   isProcessingAtom,
+  activeTabAtom,
+  scriptTextAtom,
 } from '../../store';
 import { useI18n } from '../../hooks/useI18n';
 import { getPraatWorker, loadAudioFile, exportSoundToWavBlob, downloadBlob } from '../../utils/audio';
@@ -19,6 +21,8 @@ export const MenuBar: React.FC = () => {
   const [, setSelectedIds] = useAtom(selectedIdsAtom);
   const [, setModal] = useAtom(modalAtom);
   const [, setInfoOutput] = useAtom(infoOutputAtom);
+  const [, setActiveTab] = useAtom(activeTabAtom);
+  const [, setScriptText] = useAtom(scriptTextAtom);
   const [statusMessage, setStatusMessage] = useAtom(statusMessageAtom);
   const isProcessing = useAtomValue(isProcessingAtom);
   const selectedSound = useAtomValue(singleSelectedSoundAtom);
@@ -26,6 +30,7 @@ export const MenuBar: React.FC = () => {
 
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const scriptFileInputRef = useRef<HTMLInputElement>(null);
   const menuBarRef = useRef<HTMLDivElement>(null);
 
   // Close open dropdown when clicking outside
@@ -116,6 +121,22 @@ export const MenuBar: React.FC = () => {
     }
   };
 
+  const handleScriptFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result;
+      if (typeof content === 'string') {
+        setScriptText(content);
+        setActiveTab('script');
+      }
+    };
+    reader.readAsText(file);
+    if (scriptFileInputRef.current) scriptFileInputRef.current.value = '';
+  };
+
   return (
     <div
       ref={menuBarRef}
@@ -129,6 +150,15 @@ export const MenuBar: React.FC = () => {
         accept="audio/*,.wav,.mp3,.flac,.ogg,.aiff,.TextGrid,.textgrid"
         className="hidden"
         onChange={handleFileChange}
+      />
+
+      {/* Hidden File Input for "Open Praat script..." */}
+      <input
+        ref={scriptFileInputRef}
+        type="file"
+        accept=".praat,.txt"
+        className="hidden"
+        onChange={handleScriptFileChange}
       />
 
       {/* Left Menu Items */}
@@ -150,16 +180,26 @@ export const MenuBar: React.FC = () => {
             {t.menu.praat}
           </button>
           {activeMenu === 'praat' && (
-            <div className="absolute left-0 top-full z-40 mt-0.5 w-48 rounded border border-slate-300 bg-white py-1 shadow-lg text-slate-700">
+            <div className="absolute left-0 top-full z-40 mt-0.5 w-52 rounded border border-slate-300 bg-white py-1 shadow-lg text-slate-700">
               <button
                 type="button"
                 className="w-full px-3 py-1 text-left hover:bg-blue-600 hover:text-white"
                 onClick={() => {
-                  setModal({ type: 'about' });
+                  setActiveTab('script');
                   setActiveMenu(null);
                 }}
               >
-                {t.commands.aboutWebPraat}
+                {t.commands.newPraatScript}
+              </button>
+              <button
+                type="button"
+                className="w-full px-3 py-1 text-left hover:bg-blue-600 hover:text-white"
+                onClick={() => {
+                  setActiveMenu(null);
+                  scriptFileInputRef.current?.click();
+                }}
+              >
+                {t.commands.openPraatScript}
               </button>
               <div className="my-1 border-t border-slate-200" />
               <button
@@ -171,6 +211,17 @@ export const MenuBar: React.FC = () => {
                 }}
               >
                 {t.commands.clearInfo}
+              </button>
+              <div className="my-1 border-t border-slate-200" />
+              <button
+                type="button"
+                className="w-full px-3 py-1 text-left hover:bg-blue-600 hover:text-white"
+                onClick={() => {
+                  setModal({ type: 'about' });
+                  setActiveMenu(null);
+                }}
+              >
+                {t.commands.aboutWebPraat}
               </button>
             </div>
           )}

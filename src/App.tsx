@@ -14,6 +14,7 @@ import { InfoWindow } from './components/InfoWindow/InfoWindow';
 import { ModalDialog } from './components/shared/ModalDialog';
 import { SoundEditor } from './components/SoundEditor/SoundEditor';
 import { TextGridEditor } from './components/TextGridEditor/TextGridEditor';
+import { ScriptConsole } from './components/ScriptConsole/ScriptConsole';
 
 export default function App() {
   const { t } = useI18n();
@@ -118,6 +119,33 @@ export default function App() {
                 </button>
               </div>
             )}
+
+            {/* Praat Script Tab */}
+            <div
+              className={`ml-1 flex items-center rounded-t border-t border-x px-3 py-1 ${
+                activeTab === 'script'
+                  ? 'border-slate-300 bg-white text-blue-700 font-semibold'
+                  : 'border-transparent text-slate-600 hover:text-slate-800'
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => setActiveTab('script')}
+                className="mr-1"
+              >
+                {t.script.title}
+              </button>
+              {activeTab === 'script' && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('objects')}
+                  title={t.script.closeTab}
+                  className="text-slate-400 hover:text-red-600 rounded px-1"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Tab Content Body */}
@@ -130,6 +158,8 @@ export default function App() {
                 textGrid={editorTextGrid}
                 onClose={handleCloseTextGridEditor}
               />
+            ) : activeTab === 'script' ? (
+              <ScriptConsole onClose={() => setActiveTab('objects')} />
             ) : (
               /* Default Praat Picture Drawing Area */
               <div className="h-full w-full p-4 overflow-auto">

@@ -233,4 +233,23 @@ export const ko: LocaleDictionary = {
     playSelection: '선택영역 재생',
     playWindow: '화면영역 재생',
   },
+
+  // Script Console
+  script: {
+    title: 'Praat 스크립트',
+    run: '실행 (Run)',
+    running: '실행 중...',
+    clear: '지우기',
+    clearInfo: '정보창 지우기',
+    samples: '샘플 스크립트...',
+    sampleArithmetic: '반복문 및 수학 계산',
+    sampleProcedures: '프로시저 및 문자열 처리',
+    sampleVariables: '변수 일괄 연산',
+    openScript: '열기...',
+    saveScript: '저장...',
+    shortcutHint: 'Ctrl+Enter로 실행',
+    scriptCompleted: '스크립트가 성공적으로 실행되었습니다',
+    scriptError: '스크립트 실행 중 오류가 발생했습니다',
+    closeTab: '스크립트 창 닫기',
+  },
 };

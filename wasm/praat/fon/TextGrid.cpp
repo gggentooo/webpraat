@@ -83,7 +83,7 @@ void TextInterval_setText (TextInterval me, conststring32 text) {
 	}
 }
 
-Thing_implement (TextTier, AnyTier, 0);
+Thing_implement (TextTier, Function, 0);
 
 autoTextTier TextTier_create (double tmin, double tmax) {
 	try {

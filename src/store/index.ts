@@ -15,6 +15,8 @@ export const localeAtom = atom<SupportedLocale>(defaultLocale);
 export const activeTabAtom = atom<EditorTabType>('objects');
 export const editorSoundIdAtom = atom<PraatId | null>(null);
 export const editorTextGridIdAtom = atom<PraatId | null>(null);
+export const scriptTextAtom = atom<string>('# Praat script\nwriteInfoLine: "Hello from WebPraat!"\nfor i from 1 to 5\n    appendInfoLine: "Step ", i, ": value = ", i * i\nendfor\n');
+export const isScriptRunningAtom = atom<boolean>(false);
 export const modalAtom = atom<ModalState | null>(null);
 export const isProcessingAtom = atom<boolean>(false);
 export const statusMessageAtom = atom<string>('');

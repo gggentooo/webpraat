@@ -159,4 +159,7 @@ export interface PraatWorkerApi {
   // Scripting
   executeScript(scriptText: string): Promise<string>;
   getInfoOutput(): Promise<string>;
+  clearInfoOutput(): Promise<void>;
+  getObjectsJson(): Promise<Array<{ id: number; className: string; name: string; duration?: number; sampleRate?: number; numChannels?: number; numSamples?: number }>>;
+  selectObject(id: number): Promise<boolean>;
 }

@@ -1139,7 +1139,7 @@ void MelderFile_writeText_e (MelderFile file, conststring32 text, kMelder_textOu
 	} else if ((outputEncoding == kMelder_textOutputEncoding::ASCII_THEN_UTF16 && Melder_isValidAscii (text)) ||
 		(outputEncoding == kMelder_textOutputEncoding::ISO_LATIN1_THEN_UTF16 && Melder_isEncodable (text, kMelder_textOutputEncoding_ISO_LATIN1)))
 	{
-		#ifdef _WIN32
+		#if defined (_WIN32) || defined (__EMSCRIPTEN__)
 			#define flockfile(f)  (void) 0
 			#define funlockfile(f)  (void) 0
 			#define putc_unlocked  putc
