@@ -191,3 +191,86 @@ export async function exportSoundToWavBlob(
   copy.set(wavBytes);
   return new Blob([copy.buffer], { type: 'audio/wav' });
 }
+
+/**
+ * Creates a synthetic pure sine wave Sound object in the worker.
+ */
+export async function createPureTone(
+  worker: PraatWorkerApi,
+  frequency: number = 440,
+  duration: number = 1.0,
+  sampleRate: number = 44100,
+  amplitude: number = 0.5,
+  name: string = 'tone'
+): Promise<SoundInfo> {
+  const n = Math.floor(sampleRate * duration);
+  const samples = new Float64Array(n);
+  const omega = 2 * Math.PI * frequency;
+  for (let i = 0; i < n; ++i) {
+    samples[i] = amplitude * Math.sin(omega * (i / sampleRate));
+  }
+  const soundId = await worker.createSound(samples, n, 1, sampleRate, name);
+  return worker.getSoundInfo(soundId);
+}
+
+let playbackCtx: AudioContext | null = null;
+let currentSource: AudioBufferSourceNode | null = null;
+
+/**
+ * Plays a Sound object through browser Web Audio destination.
+ */
+export async function playSound(worker: PraatWorkerApi, soundId: number): Promise<void> {
+  if (typeof window === 'undefined') return;
+  const AudioContextClass =
+    window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+  if (!AudioContextClass) return;
+
+  const info = await worker.getSoundInfo(soundId);
+  const channels = info.numChannels;
+  const n = info.numSamples;
+  const sampleRate = info.sampleRate;
+  if (n <= 0) return;
+
+  if (!playbackCtx || playbackCtx.state === 'closed') {
+    playbackCtx = new AudioContextClass();
+  }
+  if (playbackCtx.state === 'suspended') {
+    await playbackCtx.resume();
+  }
+
+  // Stop previous playback
+  stopPlayback();
+
+  const audioBuf = playbackCtx.createBuffer(channels, n, sampleRate);
+  for (let ch = 1; ch <= channels; ++ch) {
+    const channelData = await worker.getSoundChannelSamples(soundId, ch);
+    const bufChannel = audioBuf.getChannelData(ch - 1);
+    for (let i = 0; i < n; ++i) {
+      bufChannel[i] = channelData[i];
+    }
+  }
+
+  const source = playbackCtx.createBufferSource();
+  source.buffer = audioBuf;
+  source.connect(playbackCtx.destination);
+  source.onended = () => {
+    if (currentSource === source) {
+      currentSource = null;
+    }
+  };
+  currentSource = source;
+  source.start();
+}
+
+/**
+ * Stops any currently playing audio.
+ */
+export function stopPlayback(): void {
+  if (currentSource) {
+    try {
+      currentSource.stop();
+      currentSource.disconnect();
+    } catch {}
+    currentSource = null;
+  }
+}
