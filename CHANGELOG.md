@@ -5,6 +5,18 @@ All notable feature implementations, bug fixes, debuggings, and build/deployment
 ---
 
 ## `HEAD` — 2026-11-02
+**`docs: add comprehensive English and Korean user manuals in docs/`**
+
+- **User Documentation**:
+  - Authored student-oriented English manual [`docs/manual_en.md`](./docs/manual_en.md) and fully synchronized Korean manual [`docs/manual_ko.md`](./docs/manual_ko.md) tailored for linguistics and phonetics students.
+  - Aligned 100% of Korean menu items, commands, dynamic actions, dialog titles, units, and status messages verbatim with `src/config/locales/ko.ts`.
+  - Documented all top menu bar items (`Praat`, `New`, `Open`, `Save`, `Help`, `Language`), the Objects list and dynamic action buttons for every object type (`Sound`, `Pitch`, `Formant`, `Spectrogram`, `Intensity`, `TextGrid`, `PowerCepstrogram`, etc.).
+  - Documented the Sound Editor (waveform, spectrogram, pitch/formant/intensity overlays, viewport zoom, playback), TextGrid Editor (tier operations, boundary circles, IPA palette, shortcuts), Praat Picture (viewports, drawing, styling, PNG/SVG export), Sound Recorder (mono/stereo, VU meter, sample rates), Praat Script Console (running scripts, forms, pause windows, local folder mounting), Info Window, OPFS workspace persistence, and a keyboard shortcuts table.
+  - Linked both `docs/manual_en.md` and `docs/manual_ko.md` under `## Documentation` in `README.md`.
+
+---
+
+## `1d01ea9` — 2026-11-02
 **`docs(license): add WebPraat Non-Commercial & Attribution license and update project metadata`**
 
 - **Licensing & Documentation**:

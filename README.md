@@ -162,7 +162,9 @@ WebPraat relies on `SharedArrayBuffer` for Web Worker threading and AudioWorklet
 
 ## Documentation
 
-For comprehensive technical details, consult the documents in the [`docs/`](./docs/) directory:
+For user guidance and comprehensive technical details, consult the documents in the [`docs/`](./docs/) directory:
+- [**WebPraat User Manual (English, `docs/manual_en.md`)**](./docs/manual_en.md): Practical user guide for linguistics students detailing all menus, objects, Sound Editor, TextGrid annotation, Praat Picture, Sound Recorder, scripting, and keyboard shortcuts.
+- [**WebPraat 사용자 매뉴얼 (한국어, `docs/manual_ko.md`)**](./docs/manual_ko.md): 언어학 및 음성학 수업 실습을 위한 한국어 사용자 매뉴얼 (메뉴, 객체, 사운드 에디터, TextGrid 음성 전사, Praat 그림창, 녹음기, 스크립트, 단축키 일람).
 - [**Desktop Praat Architecture (`docs/praat_architecture.md`)**](./docs/praat_architecture.md): Analysis of desktop Praat's internal C++ module graph, data types (`Thing`, `Data`, `Function`, `Sampled`), and execution pipeline.
 - [**WebPraat System Architecture (`docs/webpraat_architecture.md`)**](./docs/webpraat_architecture.md): Technical specification of the WASM compilation strategy, C bridge memory model, Web Worker architecture, AudioWorklet pipeline, and canvas rendering engine.
 - [**Development Plan & Phases (`docs/webpraat_plan.md`)**](./docs/webpraat_plan.md): Historical milestone roadmap from Phase 1 (Core WASM) through Phase 8 (TextGrid operations & menus).
