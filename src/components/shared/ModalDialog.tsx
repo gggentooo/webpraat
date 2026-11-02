@@ -773,7 +773,7 @@ export const ModalDialog: React.FC = () => {
               </div>
               <div>
                 <strong>Authors:</strong> Port of Paul Boersma &amp; David Weenink&apos;s Praat
-                system
+                system, Created 2026 by gggentooo
               </div>
             </div>
             <div className="flex justify-end pt-2">

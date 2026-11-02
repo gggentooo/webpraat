@@ -30,6 +30,7 @@ export const ko: LocaleDictionary = {
     // Praat menu
     aboutPraat: 'Praat 정보...',
     aboutWebPraat: 'WebPraat 정보...',
+    sourceGithub: 'Source (GitHub)',
     newPraatScript: '새 Praat 스크립트',
     openPraatScript: 'Praat 스크립트 열기...',
     clearInfo: '정보창 지우기',

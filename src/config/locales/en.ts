@@ -28,6 +28,7 @@ export const en = {
     // Praat menu
     aboutPraat: 'About Praat...',
     aboutWebPraat: 'About WebPraat...',
+    sourceGithub: 'Source (GitHub)',
     newPraatScript: 'New Praat script',
     openPraatScript: 'Open Praat script...',
     clearInfo: 'Clear Info',

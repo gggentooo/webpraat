@@ -254,16 +254,15 @@ export const MenuBar: React.FC = () => {
                 {t.commands.clearInfo}
               </button>
               <div className="my-1 border-t border-slate-200" />
-              <button
-                type="button"
-                className="w-full px-3 py-1 text-left whitespace-nowrap hover:bg-blue-600 hover:text-white"
-                onClick={() => {
-                  setModal({ type: 'about' });
-                  setActiveMenu(null);
-                }}
+              <a
+                href="https://github.com/gggentooo/webpraat"
+                target="_blank"
+                rel="noreferrer"
+                className="block w-full px-3 py-1 text-left whitespace-nowrap hover:bg-blue-600 hover:text-white"
+                onClick={() => setActiveMenu(null)}
               >
-                {t.commands.aboutWebPraat}
-              </button>
+                {t.commands.sourceGithub}
+              </a>
             </div>
           )}
         </div>
