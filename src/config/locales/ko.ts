@@ -7,7 +7,7 @@ import type { LocaleDictionary } from './en';
 export const ko: LocaleDictionary = {
   // Shell & Window Titles
   app: {
-    title: 'WebPraat (웹프랏)',
+    title: 'WebPraat',
     subtitle: '웹 브라우저에서 수행하는 컴퓨터 음성음운학 분석',
     objectsTitle: 'Praat 객체 (Objects)',
     pictureTitle: 'Praat 그림 (Picture)',

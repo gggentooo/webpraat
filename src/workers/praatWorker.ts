@@ -112,7 +112,7 @@ async function ensureInit(): Promise<boolean> {
     locateFile(path: string, prefix: string) {
       if (path.endsWith('.wasm')) {
         if (typeof window !== 'undefined' || (typeof self !== 'undefined' && 'WorkerGlobalScope' in self)) {
-          return '/praatlib.wasm';
+          return '${import.meta.env.BASE_URL}praatlib.wasm';
         }
         return (prefix || '') + path;
       }
