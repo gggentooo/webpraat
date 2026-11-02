@@ -183,7 +183,7 @@ export const MenuBar: React.FC = () => {
       />
 
       {/* Left Menu Items */}
-      <div className="flex items-center space-x-0.5">
+      <div className="flex items-center space-x-0.5 shrink-0">
         <span className="mr-2 font-bold tracking-tight text-slate-900 px-1.5 py-0.5 bg-slate-300 rounded text-[11px]">
           WebPraat
         </span>
@@ -459,7 +459,7 @@ export const MenuBar: React.FC = () => {
       </div>
 
       {/* Right Controls: Language Selector & Status */}
-      <div className="flex items-center space-x-3 text-xs">
+      <div className="flex items-center space-x-3 text-xs shrink-0">
         {isProcessing && (
           <span className="flex items-center space-x-1 text-blue-700">
             <span className="inline-block h-2 w-2 animate-ping rounded-full bg-blue-600" />

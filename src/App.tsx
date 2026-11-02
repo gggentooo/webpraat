@@ -102,21 +102,23 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-slate-200 font-sans text-slate-800">
-      {/* 1. Top MenuBar */}
-      <header className="h-9 shrink-0">
-        <MenuBar />
-      </header>
+    <div className="w-full h-full overflow-auto bg-slate-200 flex">
+      {/* Outermost GUI Wrapper with Minimum Width and Height Restraints */}
+      <div className="flex h-full w-full min-w-[1200px] min-h-[680px] shrink-0 flex-col overflow-hidden bg-slate-200 font-sans text-slate-800">
+        {/* 1. Top MenuBar */}
+        <header className="h-9 shrink-0">
+          <MenuBar />
+        </header>
 
-      {/* 2. Middle Workspace Area */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Pane: Praat Objects Window (List + Dynamic Actions) */}
-        <aside className="w-[500px] shrink-0 border-r border-slate-300 bg-white flex flex-col shadow-xs">
-          <ObjectsPanel />
-        </aside>
+        {/* 2. Middle Workspace Area */}
+        <div className="flex flex-1 overflow-hidden min-h-0">
+          {/* Left Pane: Praat Objects Window (List + Dynamic Actions) */}
+          <aside className="w-[500px] shrink-0 border-r border-slate-300 bg-white flex flex-col shadow-xs">
+            <ObjectsPanel />
+          </aside>
 
-        {/* Right Pane: Workspace / Editor / Praat Picture */}
-        <main className="flex flex-1 flex-col overflow-hidden bg-slate-100">
+          {/* Right Pane: Workspace / Editor / Praat Picture */}
+          <main className="flex flex-1 flex-col overflow-hidden bg-slate-100 min-w-0">
           {/* Editor Header / Tab bar */}
           <div className="flex h-7 shrink-0 items-center border-b border-slate-300 bg-slate-200 px-2 text-xs font-medium">
             <button
@@ -251,6 +253,7 @@ export default function App() {
       {/* 5. Global Modal Dialogs */}
       <ModalDialog />
       <SoundRecorderModal />
+      </div>
     </div>
   );
 }
