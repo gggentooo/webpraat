@@ -193,17 +193,17 @@ export const MenuBar: React.FC = () => {
           <button
             type="button"
             onClick={() => handleMenuClick('praat')}
-            className={`rounded px-2.5 py-1 hover:bg-slate-300 ${
+            className={`rounded px-2.5 py-1 whitespace-nowrap hover:bg-slate-300 ${
               activeMenu === 'praat' ? 'bg-slate-300 text-slate-900' : ''
             }`}
           >
             {t.menu.praat}
           </button>
           {activeMenu === 'praat' && (
-            <div className="absolute left-0 top-full z-40 mt-0.5 w-56 rounded border border-slate-300 bg-white py-1 shadow-lg text-slate-700">
+            <div className="absolute left-0 top-full z-40 mt-0.5 min-w-56 w-max max-w-sm rounded border border-slate-300 bg-white py-1 shadow-lg text-slate-700">
               <button
                 type="button"
-                className="w-full px-3 py-1 text-left hover:bg-blue-600 hover:text-white"
+                className="w-full px-3 py-1 text-left whitespace-nowrap hover:bg-blue-600 hover:text-white"
                 onClick={() => {
                   setActiveTab('script');
                   setActiveMenu(null);
@@ -213,7 +213,7 @@ export const MenuBar: React.FC = () => {
               </button>
               <button
                 type="button"
-                className="w-full px-3 py-1 text-left hover:bg-blue-600 hover:text-white"
+                className="w-full px-3 py-1 text-left whitespace-nowrap hover:bg-blue-600 hover:text-white"
                 onClick={() => {
                   setActiveMenu(null);
                   scriptFileInputRef.current?.click();
@@ -224,7 +224,7 @@ export const MenuBar: React.FC = () => {
               <div className="my-1 border-t border-slate-200" />
               <button
                 type="button"
-                className="w-full px-3 py-1 text-left hover:bg-blue-600 hover:text-white"
+                className="w-full px-3 py-1 text-left whitespace-nowrap hover:bg-blue-600 hover:text-white"
                 onClick={() => {
                   setActiveMenu(null);
                   void handleSaveWorkspace();
@@ -234,7 +234,7 @@ export const MenuBar: React.FC = () => {
               </button>
               <button
                 type="button"
-                className="w-full px-3 py-1 text-left hover:bg-blue-600 hover:text-white"
+                className="w-full px-3 py-1 text-left whitespace-nowrap hover:bg-blue-600 hover:text-white"
                 onClick={() => {
                   setActiveMenu(null);
                   void handleClearWorkspace();
@@ -245,7 +245,7 @@ export const MenuBar: React.FC = () => {
               <div className="my-1 border-t border-slate-200" />
               <button
                 type="button"
-                className="w-full px-3 py-1 text-left hover:bg-blue-600 hover:text-white"
+                className="w-full px-3 py-1 text-left whitespace-nowrap hover:bg-blue-600 hover:text-white"
                 onClick={() => {
                   setInfoOutput('');
                   setActiveMenu(null);
@@ -256,7 +256,7 @@ export const MenuBar: React.FC = () => {
               <div className="my-1 border-t border-slate-200" />
               <button
                 type="button"
-                className="w-full px-3 py-1 text-left hover:bg-blue-600 hover:text-white"
+                className="w-full px-3 py-1 text-left whitespace-nowrap hover:bg-blue-600 hover:text-white"
                 onClick={() => {
                   setModal({ type: 'about' });
                   setActiveMenu(null);
@@ -273,17 +273,17 @@ export const MenuBar: React.FC = () => {
           <button
             type="button"
             onClick={() => handleMenuClick('new')}
-            className={`rounded px-2.5 py-1 hover:bg-slate-300 ${
+            className={`rounded px-2.5 py-1 whitespace-nowrap hover:bg-slate-300 ${
               activeMenu === 'new' ? 'bg-slate-300 text-slate-900' : ''
             }`}
           >
             {t.menu.new}
           </button>
           {activeMenu === 'new' && (
-            <div className="absolute left-0 top-full z-40 mt-0.5 w-64 rounded border border-slate-300 bg-white py-1 shadow-lg text-slate-700">
+            <div className="absolute left-0 top-full z-40 mt-0.5 min-w-64 w-max max-w-sm rounded border border-slate-300 bg-white py-1 shadow-lg text-slate-700">
               <button
                 type="button"
-                className="w-full px-3 py-1 text-left hover:bg-blue-600 hover:text-white"
+                className="w-full px-3 py-1 text-left whitespace-nowrap hover:bg-blue-600 hover:text-white"
                 onClick={() => {
                   setModal({ type: 'soundRecorder', initialValues: { channels: 1 } });
                   setActiveMenu(null);
@@ -293,7 +293,7 @@ export const MenuBar: React.FC = () => {
               </button>
               <button
                 type="button"
-                className="w-full px-3 py-1 text-left hover:bg-blue-600 hover:text-white"
+                className="w-full px-3 py-1 text-left whitespace-nowrap hover:bg-blue-600 hover:text-white"
                 onClick={() => {
                   setModal({ type: 'soundRecorder', initialValues: { channels: 2 } });
                   setActiveMenu(null);
@@ -304,7 +304,7 @@ export const MenuBar: React.FC = () => {
               <div className="my-1 border-t border-slate-200" />
               <button
                 type="button"
-                className="w-full px-3 py-1 text-left hover:bg-blue-600 hover:text-white"
+                className="w-full px-3 py-1 text-left whitespace-nowrap hover:bg-blue-600 hover:text-white"
                 onClick={() => {
                   setModal({ type: 'pureTone' });
                   setActiveMenu(null);
@@ -314,7 +314,7 @@ export const MenuBar: React.FC = () => {
               </button>
               <button
                 type="button"
-                className="w-full px-3 py-1 text-left hover:bg-blue-600 hover:text-white"
+                className="w-full px-3 py-1 text-left whitespace-nowrap hover:bg-blue-600 hover:text-white"
                 onClick={() => {
                   setModal({ type: 'createKlattGridFromVowel' });
                   setActiveMenu(null);
@@ -325,7 +325,7 @@ export const MenuBar: React.FC = () => {
               <div className="my-1 border-t border-slate-200" />
               <button
                 type="button"
-                className="w-full px-3 py-1 text-left hover:bg-blue-600 hover:text-white"
+                className="w-full px-3 py-1 text-left whitespace-nowrap hover:bg-blue-600 hover:text-white"
                 onClick={() => {
                   setModal({ type: 'createSpeaker' });
                   setActiveMenu(null);
@@ -335,7 +335,7 @@ export const MenuBar: React.FC = () => {
               </button>
               <button
                 type="button"
-                className="w-full px-3 py-1 text-left hover:bg-blue-600 hover:text-white"
+                className="w-full px-3 py-1 text-left whitespace-nowrap hover:bg-blue-600 hover:text-white"
                 onClick={() => {
                   setModal({ type: 'createArtword' });
                   setActiveMenu(null);
@@ -352,17 +352,17 @@ export const MenuBar: React.FC = () => {
           <button
             type="button"
             onClick={() => handleMenuClick('open')}
-            className={`rounded px-2.5 py-1 hover:bg-slate-300 ${
+            className={`rounded px-2.5 py-1 whitespace-nowrap hover:bg-slate-300 ${
               activeMenu === 'open' ? 'bg-slate-300 text-slate-900' : ''
             }`}
           >
             {t.menu.open}
           </button>
           {activeMenu === 'open' && (
-            <div className="absolute left-0 top-full z-40 mt-0.5 w-52 rounded border border-slate-300 bg-white py-1 shadow-lg text-slate-700">
+            <div className="absolute left-0 top-full z-40 mt-0.5 min-w-52 w-max max-w-sm rounded border border-slate-300 bg-white py-1 shadow-lg text-slate-700">
               <button
                 type="button"
-                className="w-full px-3 py-1 text-left hover:bg-blue-600 hover:text-white"
+                className="w-full px-3 py-1 text-left whitespace-nowrap hover:bg-blue-600 hover:text-white"
                 onClick={() => {
                   setActiveMenu(null);
                   fileInputRef.current?.click();
@@ -379,18 +379,18 @@ export const MenuBar: React.FC = () => {
           <button
             type="button"
             onClick={() => handleMenuClick('save')}
-            className={`rounded px-2.5 py-1 hover:bg-slate-300 ${
+            className={`rounded px-2.5 py-1 whitespace-nowrap hover:bg-slate-300 ${
               activeMenu === 'save' ? 'bg-slate-300 text-slate-900' : ''
             }`}
           >
             {t.menu.save}
           </button>
           {activeMenu === 'save' && (
-            <div className="absolute left-0 top-full z-40 mt-0.5 w-52 rounded border border-slate-300 bg-white py-1 shadow-lg text-slate-700">
+            <div className="absolute left-0 top-full z-40 mt-0.5 min-w-56 w-max max-w-sm rounded border border-slate-300 bg-white py-1 shadow-lg text-slate-700">
               <button
                 type="button"
                 disabled={!selectedSound}
-                className={`w-full px-3 py-1 text-left ${
+                className={`w-full px-3 py-1 text-left whitespace-nowrap ${
                   selectedSound
                     ? 'hover:bg-blue-600 hover:text-white'
                     : 'text-slate-400 cursor-not-allowed'
@@ -405,7 +405,7 @@ export const MenuBar: React.FC = () => {
               <button
                 type="button"
                 disabled={!selectedTextGrid}
-                className={`w-full px-3 py-1 text-left ${
+                className={`w-full px-3 py-1 text-left whitespace-nowrap ${
                   selectedTextGrid
                     ? 'hover:bg-blue-600 hover:text-white'
                     : 'text-slate-400 cursor-not-allowed'
@@ -426,26 +426,26 @@ export const MenuBar: React.FC = () => {
           <button
             type="button"
             onClick={() => handleMenuClick('help')}
-            className={`rounded px-2.5 py-1 hover:bg-slate-300 ${
+            className={`rounded px-2.5 py-1 whitespace-nowrap hover:bg-slate-300 ${
               activeMenu === 'help' ? 'bg-slate-300 text-slate-900' : ''
             }`}
           >
             {t.menu.help}
           </button>
           {activeMenu === 'help' && (
-            <div className="absolute left-0 top-full z-40 mt-0.5 w-48 rounded border border-slate-300 bg-white py-1 shadow-lg text-slate-700">
+            <div className="absolute left-0 top-full z-40 mt-0.5 min-w-48 w-max max-w-sm rounded border border-slate-300 bg-white py-1 shadow-lg text-slate-700">
               <a
                 href="https://www.fon.hum.uva.nl/praat/manual/Intro.html"
                 target="_blank"
                 rel="noreferrer"
-                className="block w-full px-3 py-1 text-left hover:bg-blue-600 hover:text-white"
+                className="block w-full px-3 py-1 text-left whitespace-nowrap hover:bg-blue-600 hover:text-white"
                 onClick={() => setActiveMenu(null)}
               >
                 {t.commands.praatManual}
               </a>
               <button
                 type="button"
-                className="w-full px-3 py-1 text-left hover:bg-blue-600 hover:text-white"
+                className="w-full px-3 py-1 text-left whitespace-nowrap hover:bg-blue-600 hover:text-white"
                 onClick={() => {
                   setModal({ type: 'about' });
                   setActiveMenu(null);
@@ -474,7 +474,7 @@ export const MenuBar: React.FC = () => {
           <button
             type="button"
             onClick={() => setLocale('en')}
-            className={`rounded px-1.5 py-0.5 ${
+            className={`rounded px-1.5 py-0.5 whitespace-nowrap ${
               locale === 'en'
                 ? 'bg-blue-600 text-white font-semibold'
                 : 'text-slate-600 hover:bg-slate-100'
@@ -485,7 +485,7 @@ export const MenuBar: React.FC = () => {
           <button
             type="button"
             onClick={() => setLocale('ko')}
-            className={`rounded px-1.5 py-0.5 ${
+            className={`rounded px-1.5 py-0.5 whitespace-nowrap ${
               locale === 'ko'
                 ? 'bg-blue-600 text-white font-semibold'
                 : 'text-slate-600 hover:bg-slate-100'

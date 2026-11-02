@@ -1042,12 +1042,12 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
           )}
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 shrink-0">
           {/* Export TextGrid Button */}
           <button
             type="button"
             onClick={handleExportTextGrid}
-            className="rounded border border-blue-600 bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs"
+            className="rounded border border-blue-600 bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs whitespace-nowrap shrink-0"
           >
             Export .TextGrid
           </button>
@@ -1056,7 +1056,7 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="rounded border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-700 hover:bg-slate-50 shadow-xs"
+              className="rounded border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-700 hover:bg-slate-50 shadow-xs whitespace-nowrap shrink-0"
             >
               {t.editor.closeEditor}
             </button>
@@ -1220,16 +1220,16 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
       </div>
 
       {/* 6. Praat Playback & Zoom Bar */}
-      <div className="flex h-8 shrink-0 items-center justify-between border-t border-slate-300 bg-slate-200 px-2">
+      <div className="flex h-8 shrink-0 items-center justify-between border-t border-slate-300 bg-slate-200 px-2 overflow-x-auto">
         {/* Playback buttons */}
-        <div className="flex items-center space-x-1.5 font-mono text-[11px]">
+        <div className="flex items-center space-x-1.5 font-mono text-[11px] shrink-0">
           <button
             type="button"
             onClick={() => {
               if (isPlaying) stop();
               else play(tmin, tmax);
             }}
-            className="flex items-center rounded border border-slate-300 bg-white px-2 py-0.5 hover:bg-slate-50 active:bg-slate-200 shadow-xs"
+            className="flex items-center rounded border border-slate-300 bg-white px-2 py-0.5 hover:bg-slate-50 active:bg-slate-200 shadow-xs whitespace-nowrap shrink-0"
           >
             <span className="text-slate-400 mr-1.5">▶</span>
             <span className="font-semibold">{visibleDuration.toFixed(4)}</span>
@@ -1248,7 +1248,7 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
                   );
                 }
               }}
-              className="flex items-center rounded border border-blue-400 bg-blue-50 px-2 py-0.5 text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs"
+              className="flex items-center rounded border border-blue-400 bg-blue-50 px-2 py-0.5 text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs whitespace-nowrap shrink-0"
             >
               <span className="text-blue-500 mr-1.5">▶</span>
               <span className="font-semibold">{selectionDuration.toFixed(4)}</span>
@@ -1262,7 +1262,7 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
               if (isPlaying) stop();
               else play(0, duration);
             }}
-            className="flex items-center rounded border border-slate-300 bg-white px-2 py-0.5 hover:bg-slate-50 active:bg-slate-200 shadow-xs"
+            className="flex items-center rounded border border-slate-300 bg-white px-2 py-0.5 hover:bg-slate-50 active:bg-slate-200 shadow-xs whitespace-nowrap shrink-0"
           >
             <span className="text-slate-400 mr-1.5">▶</span>
             <span className="font-semibold">{duration.toFixed(4)}</span>
@@ -1271,25 +1271,25 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
         </div>
 
         {/* Zoom buttons */}
-        <div className="flex items-center space-x-1 font-semibold text-[11px]">
+        <div className="flex items-center space-x-1 font-semibold text-[11px] shrink-0">
           <button
             type="button"
             onClick={zoomAll}
-            className="rounded border border-slate-300 bg-white px-2 py-0.5 text-slate-700 hover:bg-slate-50 active:bg-slate-200 shadow-xs"
+            className="rounded border border-slate-300 bg-white px-2 py-0.5 text-slate-700 hover:bg-slate-50 active:bg-slate-200 shadow-xs whitespace-nowrap shrink-0"
           >
             {t.editor.zoomAll}
           </button>
           <button
             type="button"
             onClick={zoomIn}
-            className="rounded border border-slate-300 bg-white px-2 py-0.5 text-slate-700 hover:bg-slate-50 active:bg-slate-200 shadow-xs"
+            className="rounded border border-slate-300 bg-white px-2 py-0.5 text-slate-700 hover:bg-slate-50 active:bg-slate-200 shadow-xs whitespace-nowrap shrink-0"
           >
             {t.editor.zoomIn}
           </button>
           <button
             type="button"
             onClick={zoomOut}
-            className="rounded border border-slate-300 bg-white px-2 py-0.5 text-slate-700 hover:bg-slate-50 active:bg-slate-200 shadow-xs"
+            className="rounded border border-slate-300 bg-white px-2 py-0.5 text-slate-700 hover:bg-slate-50 active:bg-slate-200 shadow-xs whitespace-nowrap shrink-0"
           >
             {t.editor.zoomOut}
           </button>
@@ -1297,7 +1297,7 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
             type="button"
             disabled={!selection || selectionDuration <= 0.0005}
             onClick={zoomSel}
-            className={`rounded border px-2 py-0.5 shadow-xs ${
+            className={`rounded border px-2 py-0.5 shadow-xs whitespace-nowrap shrink-0 ${
               selection && selectionDuration > 0.0005
                 ? 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-200'
                 : 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
@@ -1309,7 +1309,7 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
             type="button"
             disabled={zoomHistory.length === 0}
             onClick={zoomBak}
-            className={`rounded border px-2 py-0.5 shadow-xs ${
+            className={`rounded border px-2 py-0.5 shadow-xs whitespace-nowrap shrink-0 ${
               zoomHistory.length > 0
                 ? 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-200'
                 : 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
@@ -1318,7 +1318,7 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
             {t.editor.zoomBak}
           </button>
 
-          <div className="h-4 border-l border-slate-300 mx-0.5" />
+          <div className="h-4 border-l border-slate-300 mx-0.5 shrink-0" />
 
           {/* Undo button */}
           <button
@@ -1326,7 +1326,7 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
             disabled={undoStack.length === 0}
             onClick={handleUndo}
             title="Undo (Ctrl+Z / ⌘Z)"
-            className={`rounded border px-2 py-0.5 shadow-xs ${
+            className={`rounded border px-2 py-0.5 shadow-xs whitespace-nowrap shrink-0 ${
               undoStack.length > 0
                 ? 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-200'
                 : 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
@@ -1341,7 +1341,7 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
             disabled={redoStack.length === 0}
             onClick={handleRedo}
             title="Redo (Ctrl+Y / ⌘⇧Z)"
-            className={`rounded border px-2 py-0.5 shadow-xs ${
+            className={`rounded border px-2 py-0.5 shadow-xs whitespace-nowrap shrink-0 ${
               redoStack.length > 0
                 ? 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-200'
                 : 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'

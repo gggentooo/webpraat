@@ -200,18 +200,18 @@ export const PictureWindow: React.FC = () => {
           </span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex items-center gap-1.5 overflow-x-auto shrink-0">
           <button
             type="button"
             onClick={handleDrawInnerBox}
-            className="px-2.5 py-1 text-xs font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-300 rounded transition-colors"
+            className="px-2.5 py-1 text-xs font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-300 rounded transition-colors whitespace-nowrap shrink-0"
           >
             {t.picture.drawInnerBox}
           </button>
           <button
             type="button"
             onClick={handleTextTop}
-            className="px-2.5 py-1 text-xs font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-300 rounded transition-colors"
+            className="px-2.5 py-1 text-xs font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-300 rounded transition-colors whitespace-nowrap shrink-0"
           >
             {t.picture.textTop}
           </button>
@@ -220,7 +220,7 @@ export const PictureWindow: React.FC = () => {
             disabled={commands.length === 0}
             onClick={handleUndo}
             title="Undo (Ctrl+Z / ⌘Z)"
-            className="px-2.5 py-1 text-xs font-medium text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded disabled:opacity-40 transition-colors"
+            className="px-2.5 py-1 text-xs font-medium text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded disabled:opacity-40 transition-colors whitespace-nowrap shrink-0"
           >
             {t.picture.undo}
           </button>
@@ -229,7 +229,7 @@ export const PictureWindow: React.FC = () => {
             disabled={redoCommands.length === 0}
             onClick={handleRedo}
             title="Redo (Ctrl+Y / ⌘⇧Z)"
-            className="px-2.5 py-1 text-xs font-medium text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded disabled:opacity-40 transition-colors"
+            className="px-2.5 py-1 text-xs font-medium text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded disabled:opacity-40 transition-colors whitespace-nowrap shrink-0"
           >
             {t.picture.redo}
           </button>
@@ -237,24 +237,24 @@ export const PictureWindow: React.FC = () => {
             type="button"
             disabled={commands.length === 0}
             onClick={handleEraseAll}
-            className="px-2.5 py-1 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded disabled:opacity-40 transition-colors"
+            className="px-2.5 py-1 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded disabled:opacity-40 transition-colors whitespace-nowrap shrink-0"
           >
             {t.picture.eraseAll}
           </button>
 
-          <div className="h-4 w-px bg-slate-300 mx-0.5" />
+          <div className="h-4 w-px bg-slate-300 mx-0.5 shrink-0" />
 
           <button
             type="button"
             onClick={handleExportSvg}
-            className="px-2.5 py-1 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded transition-colors"
+            className="px-2.5 py-1 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded transition-colors whitespace-nowrap shrink-0"
           >
             {t.picture.exportSvg}
           </button>
           <button
             type="button"
             onClick={() => void handleExportPng()}
-            className="px-2.5 py-1 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded shadow-xs transition-colors"
+            className="px-2.5 py-1 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded shadow-xs transition-colors whitespace-nowrap shrink-0"
           >
             {t.picture.exportPng}
           </button>
@@ -262,7 +262,7 @@ export const PictureWindow: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('objects')}
-            className="ml-1 px-2.5 py-1 text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded transition-colors"
+            className="ml-1 px-2.5 py-1 text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded transition-colors whitespace-nowrap shrink-0"
           >
             {t.picture.closeTab}
           </button>

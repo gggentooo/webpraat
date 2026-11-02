@@ -227,7 +227,7 @@ export const SoundEditor: React.FC<SoundEditorProps> = ({ sound, onClose }) => {
           <button
             type="button"
             onClick={() => setShowSpectrogram((v) => !v)}
-            className={`rounded px-2 py-0.5 text-[11px] font-medium border transition-colors ${
+            className={`rounded px-2 py-0.5 text-[11px] font-medium border transition-colors whitespace-nowrap shrink-0 ${
               showSpectrogram
                 ? 'bg-slate-700 text-white border-slate-700 shadow-xs'
                 : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
@@ -239,7 +239,7 @@ export const SoundEditor: React.FC<SoundEditorProps> = ({ sound, onClose }) => {
           <button
             type="button"
             onClick={() => setShowPitch((v) => !v)}
-            className={`rounded px-2 py-0.5 text-[11px] font-medium border transition-colors ${
+            className={`rounded px-2 py-0.5 text-[11px] font-medium border transition-colors whitespace-nowrap shrink-0 ${
               showPitch
                 ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
                 : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
@@ -251,7 +251,7 @@ export const SoundEditor: React.FC<SoundEditorProps> = ({ sound, onClose }) => {
           <button
             type="button"
             onClick={() => setShowFormants((v) => !v)}
-            className={`rounded px-2 py-0.5 text-[11px] font-medium border transition-colors ${
+            className={`rounded px-2 py-0.5 text-[11px] font-medium border transition-colors whitespace-nowrap shrink-0 ${
               showFormants
                 ? 'bg-red-600 text-white border-red-600 shadow-xs'
                 : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
@@ -263,7 +263,7 @@ export const SoundEditor: React.FC<SoundEditorProps> = ({ sound, onClose }) => {
           <button
             type="button"
             onClick={() => setShowIntensity((v) => !v)}
-            className={`rounded px-2 py-0.5 text-[11px] font-medium border transition-colors ${
+            className={`rounded px-2 py-0.5 text-[11px] font-medium border transition-colors whitespace-nowrap shrink-0 ${
               showIntensity
                 ? 'bg-green-600 text-white border-green-600 shadow-xs'
                 : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
@@ -272,7 +272,7 @@ export const SoundEditor: React.FC<SoundEditorProps> = ({ sound, onClose }) => {
             {t.editor.showIntensity}
           </button>
 
-          <div className="h-4 border-l border-slate-300 mx-1" />
+          <div className="h-4 border-l border-slate-300 mx-1 shrink-0" />
 
           {/* Colour vs Greyscale toggle */}
           <button
@@ -280,7 +280,7 @@ export const SoundEditor: React.FC<SoundEditorProps> = ({ sound, onClose }) => {
             onClick={() =>
               setColorMap((prev) => (prev === 'greyscale' ? 'colour' : 'greyscale'))
             }
-            className="rounded border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-700 hover:bg-slate-50 shadow-xs"
+            className="rounded border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-700 hover:bg-slate-50 shadow-xs whitespace-nowrap shrink-0"
           >
             {colorMap === 'greyscale' ? t.editor.colour : t.editor.greyscale}
           </button>
@@ -288,7 +288,7 @@ export const SoundEditor: React.FC<SoundEditorProps> = ({ sound, onClose }) => {
 
         {/* Right: Sound info & Close */}
         <div className="flex items-center space-x-3">
-          <span className="text-[11px] text-slate-500 font-mono">
+          <span className="text-[11px] text-slate-500 font-mono whitespace-nowrap">
             {sound.name} | {sampleRate} {t.units.hz} | {duration.toFixed(3)}{' '}
             {t.units.seconds}
           </span>
@@ -296,7 +296,7 @@ export const SoundEditor: React.FC<SoundEditorProps> = ({ sound, onClose }) => {
             <button
               type="button"
               onClick={onClose}
-              className="rounded border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-700 hover:bg-slate-50 shadow-xs"
+              className="rounded border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-700 hover:bg-slate-50 shadow-xs whitespace-nowrap shrink-0"
             >
               {t.editor.closeEditor}
             </button>
@@ -359,9 +359,9 @@ export const SoundEditor: React.FC<SoundEditorProps> = ({ sound, onClose }) => {
       </div>
 
       {/* 4. Praat Playback & Zoom Bar */}
-      <div className="flex h-8 shrink-0 items-center justify-between border-t border-slate-300 bg-slate-200 px-2">
+      <div className="flex h-8 shrink-0 items-center justify-between border-t border-slate-300 bg-slate-200 px-2 overflow-x-auto">
         {/* Left: Praat-style 3 Playback Buttons */}
-        <div className="flex items-center space-x-1.5 font-mono text-[11px]">
+        <div className="flex items-center space-x-1.5 font-mono text-[11px] shrink-0">
           {/* 1. Visible Window Play button */}
           <button
             type="button"
@@ -370,7 +370,7 @@ export const SoundEditor: React.FC<SoundEditorProps> = ({ sound, onClose }) => {
               if (isPlaying) stop();
               else play(tmin, tmax);
             }}
-            className="flex items-center rounded border border-slate-300 bg-white px-2 py-0.5 hover:bg-slate-50 active:bg-slate-200 shadow-xs"
+            className="flex items-center rounded border border-slate-300 bg-white px-2 py-0.5 hover:bg-slate-50 active:bg-slate-200 shadow-xs whitespace-nowrap shrink-0"
           >
             <span className="text-slate-400 mr-1.5">▶</span>
             <span className="font-semibold">{visibleDuration.toFixed(4)}</span>
@@ -391,7 +391,7 @@ export const SoundEditor: React.FC<SoundEditorProps> = ({ sound, onClose }) => {
                   );
                 }
               }}
-              className="flex items-center rounded border border-blue-400 bg-blue-50 px-2 py-0.5 text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs"
+              className="flex items-center rounded border border-blue-400 bg-blue-50 px-2 py-0.5 text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs whitespace-nowrap shrink-0"
             >
               <span className="text-blue-500 mr-1.5">▶</span>
               <span className="font-semibold">{selectionDuration.toFixed(4)}</span>
@@ -407,7 +407,7 @@ export const SoundEditor: React.FC<SoundEditorProps> = ({ sound, onClose }) => {
               if (isPlaying) stop();
               else play(0, duration);
             }}
-            className="flex items-center rounded border border-slate-300 bg-white px-2 py-0.5 hover:bg-slate-50 active:bg-slate-200 shadow-xs"
+            className="flex items-center rounded border border-slate-300 bg-white px-2 py-0.5 hover:bg-slate-50 active:bg-slate-200 shadow-xs whitespace-nowrap shrink-0"
           >
             <span className="text-slate-400 mr-1.5">▶</span>
             <span className="font-semibold">{duration.toFixed(4)}</span>
@@ -416,25 +416,25 @@ export const SoundEditor: React.FC<SoundEditorProps> = ({ sound, onClose }) => {
         </div>
 
         {/* Right: Praat Standard Zoom Buttons (all, in, out, sel, bak) */}
-        <div className="flex items-center space-x-1 font-semibold text-[11px]">
+        <div className="flex items-center space-x-1 font-semibold text-[11px] shrink-0">
           <button
             type="button"
             onClick={zoomAll}
-            className="rounded border border-slate-300 bg-white px-2 py-0.5 text-slate-700 hover:bg-slate-50 active:bg-slate-200 shadow-xs"
+            className="rounded border border-slate-300 bg-white px-2 py-0.5 text-slate-700 hover:bg-slate-50 active:bg-slate-200 shadow-xs whitespace-nowrap shrink-0"
           >
             {t.editor.zoomAll}
           </button>
           <button
             type="button"
             onClick={zoomIn}
-            className="rounded border border-slate-300 bg-white px-2 py-0.5 text-slate-700 hover:bg-slate-50 active:bg-slate-200 shadow-xs"
+            className="rounded border border-slate-300 bg-white px-2 py-0.5 text-slate-700 hover:bg-slate-50 active:bg-slate-200 shadow-xs whitespace-nowrap shrink-0"
           >
             {t.editor.zoomIn}
           </button>
           <button
             type="button"
             onClick={zoomOut}
-            className="rounded border border-slate-300 bg-white px-2 py-0.5 text-slate-700 hover:bg-slate-50 active:bg-slate-200 shadow-xs"
+            className="rounded border border-slate-300 bg-white px-2 py-0.5 text-slate-700 hover:bg-slate-50 active:bg-slate-200 shadow-xs whitespace-nowrap shrink-0"
           >
             {t.editor.zoomOut}
           </button>
@@ -442,7 +442,7 @@ export const SoundEditor: React.FC<SoundEditorProps> = ({ sound, onClose }) => {
             type="button"
             disabled={!selection || selectionDuration <= 0.0005}
             onClick={zoomSel}
-            className={`rounded border px-2 py-0.5 shadow-xs ${
+            className={`rounded border px-2 py-0.5 shadow-xs whitespace-nowrap shrink-0 ${
               selection && selectionDuration > 0.0005
                 ? 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-200'
                 : 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
@@ -454,7 +454,7 @@ export const SoundEditor: React.FC<SoundEditorProps> = ({ sound, onClose }) => {
             type="button"
             disabled={zoomHistory.length === 0}
             onClick={zoomBak}
-            className={`rounded border px-2 py-0.5 shadow-xs ${
+            className={`rounded border px-2 py-0.5 shadow-xs whitespace-nowrap shrink-0 ${
               zoomHistory.length > 0
                 ? 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-200'
                 : 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
@@ -463,14 +463,14 @@ export const SoundEditor: React.FC<SoundEditorProps> = ({ sound, onClose }) => {
             {t.editor.zoomBak}
           </button>
 
-          <div className="h-4 border-l border-slate-300 mx-0.5" />
+          <div className="h-4 border-l border-slate-300 mx-0.5 shrink-0" />
 
           {/* Undo button */}
           <button
             type="button"
             disabled
             title="Undo (Ctrl+Z / ⌘Z)"
-            className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 text-slate-400 cursor-not-allowed shadow-xs"
+            className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 text-slate-400 cursor-not-allowed shadow-xs whitespace-nowrap shrink-0"
           >
             {t.editor.undo}
           </button>
@@ -480,7 +480,7 @@ export const SoundEditor: React.FC<SoundEditorProps> = ({ sound, onClose }) => {
             type="button"
             disabled
             title="Redo (Ctrl+Y / ⌘⇧Z)"
-            className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 text-slate-400 cursor-not-allowed shadow-xs"
+            className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 text-slate-400 cursor-not-allowed shadow-xs whitespace-nowrap shrink-0"
           >
             {t.editor.redo}
           </button>

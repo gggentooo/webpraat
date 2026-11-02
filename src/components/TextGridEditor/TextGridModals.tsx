@@ -363,11 +363,11 @@ export const TextGridModals: React.FC<TextGridModalsProps> = ({
           )}
 
           {/* Footer Buttons */}
-          <div className="flex items-center justify-end space-x-2 border-t border-slate-300 pt-3">
+          <div className="flex items-center justify-end space-x-2 border-t border-slate-300 pt-3 shrink-0">
             <button
               type="button"
               onClick={onClose}
-              className="rounded border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 active:bg-slate-200"
+              className="rounded border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 active:bg-slate-200 whitespace-nowrap shrink-0"
             >
               {t.dialogs.cancel}
             </button>
@@ -375,14 +375,14 @@ export const TextGridModals: React.FC<TextGridModalsProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded border border-slate-400 bg-slate-300 px-4 py-1 text-xs font-medium text-slate-600"
+                className="rounded border border-slate-400 bg-slate-300 px-4 py-1 text-xs font-medium text-slate-600 whitespace-nowrap shrink-0"
               >
                 {t.dialogs.ok}
               </button>
             ) : (
               <button
                 type="submit"
-                className="rounded border border-blue-600 bg-blue-600 px-4 py-1 text-xs font-medium text-white hover:bg-blue-700 active:bg-blue-800 shadow-xs"
+                className="rounded border border-blue-600 bg-blue-600 px-4 py-1 text-xs font-medium text-white hover:bg-blue-700 active:bg-blue-800 shadow-xs whitespace-nowrap shrink-0"
               >
                 {t.dialogs.ok}
               </button>

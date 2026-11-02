@@ -120,11 +120,11 @@ export default function App() {
           {/* Right Pane: Workspace / Editor / Praat Picture */}
           <main className="flex flex-1 flex-col overflow-hidden bg-slate-100 min-w-0">
           {/* Editor Header / Tab bar */}
-          <div className="flex h-7 shrink-0 items-center border-b border-slate-300 bg-slate-200 px-2 text-xs font-medium">
+          <div className="flex h-7 shrink-0 items-center border-b border-slate-300 bg-slate-200 px-2 text-xs font-medium overflow-x-auto">
             <button
               type="button"
               onClick={() => setActiveTab('picture')}
-              className={`flex items-center px-3 py-1 rounded-t border-t border-x ${
+              className={`flex items-center px-3 py-1 rounded-t border-t border-x whitespace-nowrap shrink-0 ${
                 activeTab === 'objects' || activeTab === 'picture'
                   ? 'border-slate-300 bg-white text-slate-800 font-semibold'
                   : 'border-transparent text-slate-600 hover:text-slate-800'
@@ -135,7 +135,7 @@ export default function App() {
 
             {editorSound && (
               <div
-                className={`ml-1 flex items-center rounded-t border-t border-x px-3 py-1 ${
+                className={`ml-1 flex items-center rounded-t border-t border-x px-3 py-1 whitespace-nowrap shrink-0 ${
                   activeTab === 'soundEditor'
                     ? 'border-slate-300 bg-white text-blue-700 font-semibold'
                     : 'border-transparent text-slate-600 hover:text-slate-800'
@@ -144,7 +144,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setActiveTab('soundEditor')}
-                  className="mr-2"
+                  className="mr-2 whitespace-nowrap"
                 >
                   {editorSound.name} ({t.editor.soundEditorTitle})
                 </button>
@@ -152,7 +152,7 @@ export default function App() {
                   type="button"
                   onClick={handleCloseEditor}
                   title={t.editor.closeEditor}
-                  className="text-slate-400 hover:text-red-600 rounded px-1"
+                  className="text-slate-400 hover:text-red-600 rounded px-1 shrink-0"
                 >
                   ✕
                 </button>
@@ -161,7 +161,7 @@ export default function App() {
 
             {editorTextGrid && (
               <div
-                className={`ml-1 flex items-center rounded-t border-t border-x px-3 py-1 ${
+                className={`ml-1 flex items-center rounded-t border-t border-x px-3 py-1 whitespace-nowrap shrink-0 ${
                   activeTab === 'textGridEditor'
                     ? 'border-slate-300 bg-white text-blue-700 font-semibold'
                     : 'border-transparent text-slate-600 hover:text-slate-800'
@@ -170,7 +170,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setActiveTab('textGridEditor')}
-                  className="mr-2"
+                  className="mr-2 whitespace-nowrap"
                 >
                   {editorTextGrid.name} ({t.editor.textGridEditorTitle})
                 </button>
@@ -178,7 +178,7 @@ export default function App() {
                   type="button"
                   onClick={handleCloseTextGridEditor}
                   title={t.editor.closeEditor}
-                  className="text-slate-400 hover:text-red-600 rounded px-1"
+                  className="text-slate-400 hover:text-red-600 rounded px-1 shrink-0"
                 >
                   ✕
                 </button>
@@ -187,7 +187,7 @@ export default function App() {
 
             {/* Praat Script Tab */}
             <div
-              className={`ml-1 flex items-center rounded-t border-t border-x px-3 py-1 ${
+              className={`ml-1 flex items-center rounded-t border-t border-x px-3 py-1 whitespace-nowrap shrink-0 ${
                 activeTab === 'script'
                   ? 'border-slate-300 bg-white text-blue-700 font-semibold'
                   : 'border-transparent text-slate-600 hover:text-slate-800'
@@ -196,7 +196,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setActiveTab('script')}
-                className="mr-1"
+                className="mr-1 whitespace-nowrap"
               >
                 {t.script.title}
               </button>
@@ -205,7 +205,7 @@ export default function App() {
                   type="button"
                   onClick={() => setActiveTab('objects')}
                   title={t.script.closeTab}
-                  className="text-slate-400 hover:text-red-600 rounded px-1"
+                  className="text-slate-400 hover:text-red-600 rounded px-1 shrink-0"
                 >
                   ✕
                 </button>

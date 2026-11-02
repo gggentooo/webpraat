@@ -384,7 +384,7 @@ export const ObjectsPanel: React.FC = () => {
               type="button"
               disabled={!singleSelected}
               onClick={() => setModal({ type: 'rename', objectId: singleSelected?.id })}
-              className={`rounded border px-2 py-1 text-center font-medium shadow-xs ${
+              className={`rounded border px-2 py-1 text-center font-medium shadow-xs whitespace-nowrap truncate ${
                 singleSelected
                   ? 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-200'
                   : 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
@@ -396,7 +396,7 @@ export const ObjectsPanel: React.FC = () => {
               type="button"
               disabled={!singleSelected}
               onClick={() => setModal({ type: 'copy', objectId: singleSelected?.id })}
-              className={`rounded border px-2 py-1 text-center font-medium shadow-xs ${
+              className={`rounded border px-2 py-1 text-center font-medium shadow-xs whitespace-nowrap truncate ${
                 singleSelected
                   ? 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-200'
                   : 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
@@ -410,7 +410,7 @@ export const ObjectsPanel: React.FC = () => {
               type="button"
               disabled={!singleSelected}
               onClick={handleInspect}
-              className={`rounded border px-1.5 py-1 text-center font-medium shadow-xs ${
+              className={`rounded border px-1.5 py-1 text-center font-medium shadow-xs whitespace-nowrap truncate ${
                 singleSelected
                   ? 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-200'
                   : 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
@@ -422,7 +422,7 @@ export const ObjectsPanel: React.FC = () => {
               type="button"
               disabled={!singleSelected}
               onClick={handleInfo}
-              className={`rounded border px-1.5 py-1 text-center font-medium shadow-xs ${
+              className={`rounded border px-1.5 py-1 text-center font-medium shadow-xs whitespace-nowrap truncate ${
                 singleSelected
                   ? 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-200'
                   : 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
@@ -434,7 +434,7 @@ export const ObjectsPanel: React.FC = () => {
               type="button"
               disabled={selectedIds.length === 0}
               onClick={handleRemove}
-              className={`rounded border px-1.5 py-1 text-center font-medium shadow-xs ${
+              className={`rounded border px-1.5 py-1 text-center font-medium shadow-xs whitespace-nowrap truncate ${
                 selectedIds.length > 0
                   ? 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100 active:bg-red-200'
                   : 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
@@ -470,7 +470,7 @@ export const ObjectsPanel: React.FC = () => {
                   setEditorSoundId(singleSelected.id);
                   setActiveTab('soundEditor');
                 }}
-                className="w-full rounded border border-blue-500 bg-blue-50 px-2.5 py-1.5 text-left font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs"
+                className="w-full rounded border border-blue-500 bg-blue-50 px-2.5 py-1.5 text-left font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs whitespace-nowrap truncate"
               >
                 {t.actions.viewAndEdit}
               </button>
@@ -478,7 +478,7 @@ export const ObjectsPanel: React.FC = () => {
               <button
                 type="button"
                 onClick={isPlaying ? stopPlayback : handlePlay}
-                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs whitespace-nowrap truncate"
               >
                 {isPlaying ? t.actions.stop : t.actions.play}
               </button>
@@ -486,7 +486,7 @@ export const ObjectsPanel: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setModal({ type: 'drawObject', objectId: singleSelected.id })}
-                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs whitespace-nowrap truncate"
               >
                 {t.actions.draw}
               </button>
@@ -497,7 +497,7 @@ export const ObjectsPanel: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setModal({ type: 'soundToPitch', objectId: singleSelected.id })}
-                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs whitespace-nowrap truncate"
               >
                 {t.actions.soundToPitch}
               </button>
@@ -507,7 +507,7 @@ export const ObjectsPanel: React.FC = () => {
                 onClick={() =>
                   setModal({ type: 'soundToFormantBurg', objectId: singleSelected.id })
                 }
-                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs whitespace-nowrap truncate"
               >
                 {t.actions.soundToFormantBurg}
               </button>
@@ -517,7 +517,7 @@ export const ObjectsPanel: React.FC = () => {
                 onClick={() =>
                   setModal({ type: 'soundToSpectrogram', objectId: singleSelected.id })
                 }
-                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs whitespace-nowrap truncate"
               >
                 {t.actions.soundToSpectrogram}
               </button>
@@ -527,7 +527,7 @@ export const ObjectsPanel: React.FC = () => {
                 onClick={() =>
                   setModal({ type: 'soundToIntensity', objectId: singleSelected.id })
                 }
-                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs whitespace-nowrap truncate"
               >
                 {t.actions.soundToIntensity}
               </button>
@@ -535,7 +535,7 @@ export const ObjectsPanel: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setModal({ type: 'soundToTextGrid', objectId: singleSelected.id })}
-                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs whitespace-nowrap truncate"
               >
                 {t.actions.soundToTextGrid}
               </button>
@@ -548,7 +548,7 @@ export const ObjectsPanel: React.FC = () => {
                 onClick={() =>
                   setModal({ type: 'soundToPowerCepstrogram', objectId: singleSelected.id })
                 }
-                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs whitespace-nowrap truncate"
               >
                 {t.actions.soundToPowerCepstrogram}
               </button>
@@ -556,7 +556,7 @@ export const ObjectsPanel: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setModal({ type: 'soundToLpcBurg', objectId: singleSelected.id })}
-                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs whitespace-nowrap truncate"
               >
                 {t.actions.soundToLpcBurg}
               </button>
@@ -564,7 +564,7 @@ export const ObjectsPanel: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setModal({ type: 'soundToMfcc', objectId: singleSelected.id })}
-                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs whitespace-nowrap truncate"
               >
                 {t.actions.soundToMfcc}
               </button>
@@ -574,7 +574,7 @@ export const ObjectsPanel: React.FC = () => {
                 onClick={() =>
                   setModal({ type: 'soundToKlattGrid', objectId: singleSelected.id })
                 }
-                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs whitespace-nowrap truncate"
               >
                 {t.actions.soundToKlattGrid}
               </button>
@@ -588,35 +588,35 @@ export const ObjectsPanel: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleSoundQuery('channels')}
-                className="w-full rounded px-2 py-0.5 text-left text-slate-700 hover:bg-slate-200 text-[11px]"
+                className="w-full rounded px-2 py-0.5 text-left text-slate-700 hover:bg-slate-200 text-[11px] whitespace-nowrap truncate"
               >
                 {t.actions.getNumChannels}
               </button>
               <button
                 type="button"
                 onClick={() => handleSoundQuery('samples')}
-                className="w-full rounded px-2 py-0.5 text-left text-slate-700 hover:bg-slate-200 text-[11px]"
+                className="w-full rounded px-2 py-0.5 text-left text-slate-700 hover:bg-slate-200 text-[11px] whitespace-nowrap truncate"
               >
                 {t.actions.getNumSamples}
               </button>
               <button
                 type="button"
                 onClick={() => handleSoundQuery('sampleRate')}
-                className="w-full rounded px-2 py-0.5 text-left text-slate-700 hover:bg-slate-200 text-[11px]"
+                className="w-full rounded px-2 py-0.5 text-left text-slate-700 hover:bg-slate-200 text-[11px] whitespace-nowrap truncate"
               >
                 {t.actions.getSampleRate}
               </button>
               <button
                 type="button"
                 onClick={() => handleSoundQuery('duration')}
-                className="w-full rounded px-2 py-0.5 text-left text-slate-700 hover:bg-slate-200 text-[11px]"
+                className="w-full rounded px-2 py-0.5 text-left text-slate-700 hover:bg-slate-200 text-[11px] whitespace-nowrap truncate"
               >
                 {t.actions.getDuration}
               </button>
               <button
                 type="button"
                 onClick={() => setModal({ type: 'soundGetMean', objectId: singleSelected.id })}
-                className="w-full rounded px-2 py-0.5 text-left text-slate-700 hover:bg-slate-200 text-[11px]"
+                className="w-full rounded px-2 py-0.5 text-left text-slate-700 hover:bg-slate-200 text-[11px] whitespace-nowrap truncate"
               >
                 {t.actions.getMean}
               </button>
@@ -629,7 +629,7 @@ export const ObjectsPanel: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setModal({ type: 'drawObject', objectId: singleSelected.id })}
-                className="w-full rounded border border-blue-500 bg-blue-50 px-2.5 py-1.5 text-left font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs"
+                className="w-full rounded border border-blue-500 bg-blue-50 px-2.5 py-1.5 text-left font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs whitespace-nowrap truncate"
               >
                 {t.actions.draw}
               </button>
@@ -643,7 +643,7 @@ export const ObjectsPanel: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setModal({ type: 'pitchGetMean', objectId: singleSelected.id })}
-                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs whitespace-nowrap truncate"
               >
                 {t.actions.pitchGetMean}
               </button>
@@ -653,7 +653,7 @@ export const ObjectsPanel: React.FC = () => {
                 onClick={() =>
                   setModal({ type: 'pitchGetValueAtTime', objectId: singleSelected.id })
                 }
-                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs whitespace-nowrap truncate"
               >
                 {t.actions.pitchGetValueAtTime}
               </button>
@@ -672,7 +672,7 @@ export const ObjectsPanel: React.FC = () => {
                     initialValues: { speckle: true },
                   })
                 }
-                className="w-full rounded border border-blue-500 bg-blue-50 px-2.5 py-1.5 text-left font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs"
+                className="w-full rounded border border-blue-500 bg-blue-50 px-2.5 py-1.5 text-left font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs whitespace-nowrap truncate"
               >
                 {t.actions.speckle}
               </button>
@@ -686,7 +686,7 @@ export const ObjectsPanel: React.FC = () => {
                     initialValues: { speckle: false },
                   })
                 }
-                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs whitespace-nowrap truncate"
               >
                 {t.actions.draw}
               </button>
@@ -699,7 +699,7 @@ export const ObjectsPanel: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setModal({ type: 'drawObject', objectId: singleSelected.id })}
-                className="w-full rounded border border-blue-500 bg-blue-50 px-2.5 py-1.5 text-left font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs"
+                className="w-full rounded border border-blue-500 bg-blue-50 px-2.5 py-1.5 text-left font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs whitespace-nowrap truncate"
               >
                 {t.actions.paint}
               </button>
@@ -712,7 +712,7 @@ export const ObjectsPanel: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setModal({ type: 'drawObject', objectId: singleSelected.id })}
-                className="w-full rounded border border-blue-500 bg-blue-50 px-2.5 py-1.5 text-left font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs"
+                className="w-full rounded border border-blue-500 bg-blue-50 px-2.5 py-1.5 text-left font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs whitespace-nowrap truncate"
               >
                 {t.actions.draw}
               </button>
@@ -728,7 +728,7 @@ export const ObjectsPanel: React.FC = () => {
                   setEditorTextGridId(singleSelected.id);
                   setActiveTab('textGridEditor');
                 }}
-                className="w-full rounded border border-blue-500 bg-blue-50 px-2.5 py-1.5 text-left font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs"
+                className="w-full rounded border border-blue-500 bg-blue-50 px-2.5 py-1.5 text-left font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs whitespace-nowrap truncate"
               >
                 {t.actions.viewAndEdit}
               </button>
@@ -736,7 +736,7 @@ export const ObjectsPanel: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setModal({ type: 'drawObject', objectId: singleSelected.id })}
-                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs whitespace-nowrap truncate"
               >
                 {t.actions.draw}
               </button>
@@ -751,7 +751,7 @@ export const ObjectsPanel: React.FC = () => {
                 onClick={() =>
                   setModal({ type: 'powerCepstrogramGetCpps', objectId: singleSelected.id })
                 }
-                className="w-full rounded border border-blue-500 bg-blue-50 px-2.5 py-1.5 text-left font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs"
+                className="w-full rounded border border-blue-500 bg-blue-50 px-2.5 py-1.5 text-left font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs whitespace-nowrap truncate"
               >
                 {t.actions.getCpps}
               </button>
@@ -761,7 +761,7 @@ export const ObjectsPanel: React.FC = () => {
                 onClick={() =>
                   setModal({ type: 'powerCepstrogramToCpp', objectId: singleSelected.id })
                 }
-                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs whitespace-nowrap truncate"
               >
                 {t.actions.toCpp}
               </button>
@@ -774,7 +774,7 @@ export const ObjectsPanel: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setModal({ type: 'drawObject', objectId: singleSelected.id })}
-                className="w-full rounded border border-blue-500 bg-blue-50 px-2.5 py-1.5 text-left font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs"
+                className="w-full rounded border border-blue-500 bg-blue-50 px-2.5 py-1.5 text-left font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs whitespace-nowrap truncate"
               >
                 {t.actions.draw}
               </button>
@@ -782,7 +782,7 @@ export const ObjectsPanel: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setModal({ type: 'cppGetMean', objectId: singleSelected.id })}
-                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs"
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1 text-left font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-200 shadow-xs whitespace-nowrap truncate"
               >
                 {t.actions.getMean}
               </button>
@@ -795,7 +795,7 @@ export const ObjectsPanel: React.FC = () => {
               <button
                 type="button"
                 onClick={() => void handleLpcToFormant()}
-                className="w-full rounded border border-blue-500 bg-blue-50 px-2.5 py-1.5 text-left font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs"
+                className="w-full rounded border border-blue-500 bg-blue-50 px-2.5 py-1.5 text-left font-semibold text-blue-800 hover:bg-blue-100 active:bg-blue-200 shadow-xs whitespace-nowrap truncate"
               >
                 {t.actions.toFormant}
               </button>
@@ -808,7 +808,7 @@ export const ObjectsPanel: React.FC = () => {
               <button
                 type="button"
                 onClick={() => void handleKlattGridToSound()}
-                className="w-full rounded border border-blue-600 bg-blue-600 px-2.5 py-1.5 text-left font-semibold text-white hover:bg-blue-700 active:bg-blue-800 shadow-xs"
+                className="w-full rounded border border-blue-600 bg-blue-600 px-2.5 py-1.5 text-left font-semibold text-white hover:bg-blue-700 active:bg-blue-800 shadow-xs whitespace-nowrap truncate"
               >
                 {t.actions.toSound}
               </button>
@@ -825,7 +825,7 @@ export const ObjectsPanel: React.FC = () => {
                   setEditorTextGridId(textGridInPair.id);
                   setActiveTab('textGridEditor');
                 }}
-                className="w-full rounded border border-blue-600 bg-blue-600 px-2.5 py-1.5 text-left font-semibold text-white hover:bg-blue-700 active:bg-blue-800 shadow-xs"
+                className="w-full rounded border border-blue-600 bg-blue-600 px-2.5 py-1.5 text-left font-semibold text-white hover:bg-blue-700 active:bg-blue-800 shadow-xs whitespace-nowrap truncate"
               >
                 {t.actions.viewAndEdit}
               </button>
@@ -844,7 +844,7 @@ export const ObjectsPanel: React.FC = () => {
                     initialValues: { speakerId: speakerInPair.id },
                   })
                 }
-                className="w-full rounded border border-blue-600 bg-blue-600 px-2.5 py-1.5 text-left font-semibold text-white hover:bg-blue-700 active:bg-blue-800 shadow-xs"
+                className="w-full rounded border border-blue-600 bg-blue-600 px-2.5 py-1.5 text-left font-semibold text-white hover:bg-blue-700 active:bg-blue-800 shadow-xs whitespace-nowrap truncate"
               >
                 {t.actions.artwordSpeakerToSound}
               </button>

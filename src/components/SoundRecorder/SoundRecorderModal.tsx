@@ -285,7 +285,7 @@ export const SoundRecorderModal: React.FC = () => {
                   type="button"
                   disabled={isRecording}
                   onClick={() => void handleSwitchConfig(1, sampleRate, selectedDeviceId)}
-                  className={`flex-1 py-1.5 font-medium transition-colors ${
+                  className={`flex-1 py-1.5 font-medium transition-colors whitespace-nowrap ${
                     channels === 1
                       ? 'bg-blue-600 text-white'
                       : 'bg-white text-slate-700 hover:bg-slate-50'
@@ -297,7 +297,7 @@ export const SoundRecorderModal: React.FC = () => {
                   type="button"
                   disabled={isRecording}
                   onClick={() => void handleSwitchConfig(2, sampleRate, selectedDeviceId)}
-                  className={`flex-1 py-1.5 font-medium border-l border-slate-300 transition-colors ${
+                  className={`flex-1 py-1.5 font-medium border-l border-slate-300 transition-colors whitespace-nowrap ${
                     channels === 2
                       ? 'bg-blue-600 text-white'
                       : 'bg-white text-slate-700 hover:bg-slate-50'
@@ -395,7 +395,7 @@ export const SoundRecorderModal: React.FC = () => {
               type="button"
               disabled={isRecording}
               onClick={() => void handleRecord()}
-              className="px-4 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-40 rounded shadow-sm transition-colors"
+              className="px-4 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-40 rounded shadow-sm transition-colors whitespace-nowrap shrink-0"
             >
               ● {t.recorder.record}
             </button>
@@ -403,7 +403,7 @@ export const SoundRecorderModal: React.FC = () => {
               type="button"
               disabled={!isRecording && !isPlayingPreview}
               onClick={handleStop}
-              className="px-4 py-1.5 text-xs font-semibold text-slate-800 bg-slate-200 hover:bg-slate-300 disabled:opacity-40 rounded transition-colors"
+              className="px-4 py-1.5 text-xs font-semibold text-slate-800 bg-slate-200 hover:bg-slate-300 disabled:opacity-40 rounded transition-colors whitespace-nowrap shrink-0"
             >
               ■ {t.recorder.stop}
             </button>
@@ -411,13 +411,13 @@ export const SoundRecorderModal: React.FC = () => {
               type="button"
               disabled={isRecording || meter.numSamples === 0}
               onClick={() => void handlePlayPreview()}
-              className="px-4 py-1.5 text-xs font-semibold text-slate-800 bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 disabled:opacity-40 rounded transition-colors"
+              className="px-4 py-1.5 text-xs font-semibold text-slate-800 bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 disabled:opacity-40 rounded transition-colors whitespace-nowrap shrink-0"
             >
               ▶ {t.recorder.play}
             </button>
 
-            <div className="ml-auto flex items-center gap-2">
-              <label className="text-xs font-medium text-slate-700">{t.recorder.name}:</label>
+            <div className="ml-auto flex items-center gap-2 shrink-0">
+              <label className="text-xs font-medium text-slate-700 whitespace-nowrap">{t.recorder.name}:</label>
               <input
                 type="text"
                 value={soundName}
@@ -433,17 +433,17 @@ export const SoundRecorderModal: React.FC = () => {
           <button
             type="button"
             onClick={() => void handleClose()}
-            className="px-3.5 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded hover:bg-slate-100 transition-colors"
+            className="px-3.5 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded hover:bg-slate-100 transition-colors whitespace-nowrap shrink-0"
           >
             {t.dialogs.close}
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               disabled={meter.numSamples === 0 && !isRecording}
               onClick={() => void handleSave(false)}
-              className="px-3.5 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 disabled:opacity-40 transition-colors"
+              className="px-3.5 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 disabled:opacity-40 transition-colors whitespace-nowrap shrink-0"
             >
               {t.recorder.saveToList}
             </button>
@@ -451,7 +451,7 @@ export const SoundRecorderModal: React.FC = () => {
               type="button"
               disabled={meter.numSamples === 0 && !isRecording}
               onClick={() => void handleSave(true)}
-              className="px-4 py-1.5 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-40 shadow-sm transition-colors"
+              className="px-4 py-1.5 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-40 shadow-sm transition-colors whitespace-nowrap shrink-0"
             >
               {t.recorder.saveToListAndClose}
             </button>

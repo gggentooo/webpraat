@@ -10,3 +10,8 @@ body,
   overflow: hidden;
 }
 
+button {
+  white-space: nowrap;
+}
+
+

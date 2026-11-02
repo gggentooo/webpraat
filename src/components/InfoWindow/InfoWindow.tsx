@@ -46,12 +46,12 @@ export const InfoWindow: React.FC = () => {
         <div className="flex items-center space-x-2">
           <span className="font-semibold text-slate-700">{t.app.infoTitle}</span>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 shrink-0">
           <button
             type="button"
             onClick={handleCopy}
             disabled={!infoOutput}
-            className={`rounded border px-2 py-0.5 text-[11px] font-medium shadow-xs transition-colors ${
+            className={`rounded border px-2 py-0.5 text-[11px] font-medium shadow-xs transition-colors whitespace-nowrap shrink-0 ${
               infoOutput
                 ? 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-200'
                 : 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
@@ -63,7 +63,7 @@ export const InfoWindow: React.FC = () => {
             type="button"
             onClick={handleClear}
             disabled={!infoOutput}
-            className={`rounded border px-2 py-0.5 text-[11px] font-medium shadow-xs transition-colors ${
+            className={`rounded border px-2 py-0.5 text-[11px] font-medium shadow-xs transition-colors whitespace-nowrap shrink-0 ${
               infoOutput
                 ? 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-200'
                 : 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'

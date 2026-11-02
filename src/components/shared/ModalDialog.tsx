@@ -780,7 +780,7 @@ export const ModalDialog: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setModal(null)}
-                className="px-4 py-1 border border-slate-400 bg-white hover:bg-slate-50 rounded text-xs font-medium shadow-xs"
+                className="px-4 py-1 border border-slate-400 bg-white hover:bg-slate-50 rounded text-xs font-medium shadow-xs whitespace-nowrap shrink-0"
               >
                 {t.dialogs.close}
               </button>
@@ -1773,21 +1773,21 @@ export const ModalDialog: React.FC = () => {
               <button
                 type="button"
                 onClick={handleStandards}
-                className="rounded border border-slate-300 bg-slate-200 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-300 active:bg-slate-400"
+                className="rounded border border-slate-300 bg-slate-200 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-300 active:bg-slate-400 whitespace-nowrap shrink-0"
               >
                 {t.dialogs.standards}
               </button>
-              <div className="flex space-x-2">
+              <div className="flex space-x-2 shrink-0">
                 <button
                   type="button"
                   onClick={() => setModal(null)}
-                  className="rounded border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 active:bg-slate-200"
+                  className="rounded border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 active:bg-slate-200 whitespace-nowrap shrink-0"
                 >
                   {t.dialogs.cancel}
                 </button>
                 <button
                   type="submit"
-                  className="rounded border border-blue-600 bg-blue-600 px-4 py-1 text-xs font-medium text-white hover:bg-blue-700 active:bg-blue-800 shadow-xs"
+                  className="rounded border border-blue-600 bg-blue-600 px-4 py-1 text-xs font-medium text-white hover:bg-blue-700 active:bg-blue-800 shadow-xs whitespace-nowrap shrink-0"
                 >
                   {t.dialogs.ok}
                 </button>

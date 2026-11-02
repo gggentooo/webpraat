@@ -88,21 +88,21 @@ export const TextGridMenuBar: React.FC<TextGridMenuBarProps> = ({
           type="button"
           onClick={() => toggleMenu('file')}
           onMouseEnter={() => handleMenuHover('file')}
-          className={`px-2 py-0.5 rounded hover:bg-slate-200 ${
+          className={`px-2 py-0.5 rounded whitespace-nowrap hover:bg-slate-200 ${
             activeMenu === 'file' ? 'bg-slate-300 font-semibold' : ''
           }`}
         >
           {t.textGridMenu.file}
         </button>
         {activeMenu === 'file' && (
-          <div className="absolute left-0 top-full mt-0.5 w-52 rounded border border-slate-300 bg-white py-1 shadow-lg z-50">
+          <div className="absolute left-0 top-full mt-0.5 min-w-52 w-max max-w-sm rounded border border-slate-300 bg-white py-1 shadow-lg z-50">
             <button
               type="button"
               onClick={() => handleAction(onExport)}
-              className="flex w-full items-center justify-between px-3 py-1 text-left text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              className="flex w-full items-center justify-between px-3 py-1 text-left text-[11px] whitespace-nowrap text-slate-700 hover:bg-blue-50 hover:text-blue-700"
             >
               <span>{t.textGridMenu.exportTextGrid}</span>
-              <span className="text-[10px] text-slate-400 font-mono">Ctrl+S</span>
+              <span className="text-[10px] text-slate-400 font-mono ml-4">Ctrl+S</span>
             </button>
             {onClose && (
               <>
@@ -110,7 +110,7 @@ export const TextGridMenuBar: React.FC<TextGridMenuBarProps> = ({
                 <button
                   type="button"
                   onClick={() => handleAction(onClose)}
-                  className="w-full px-3 py-1 text-left text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+                  className="w-full px-3 py-1 text-left text-[11px] whitespace-nowrap text-slate-700 hover:bg-blue-50 hover:text-blue-700"
                 >
                   {t.textGridMenu.closeEditor}
                 </button>
@@ -126,39 +126,39 @@ export const TextGridMenuBar: React.FC<TextGridMenuBarProps> = ({
           type="button"
           onClick={() => toggleMenu('edit')}
           onMouseEnter={() => handleMenuHover('edit')}
-          className={`px-2 py-0.5 rounded hover:bg-slate-200 ${
+          className={`px-2 py-0.5 rounded whitespace-nowrap hover:bg-slate-200 ${
             activeMenu === 'edit' ? 'bg-slate-300 font-semibold' : ''
           }`}
         >
           {t.textGridMenu.edit}
         </button>
         {activeMenu === 'edit' && (
-          <div className="absolute left-0 top-full mt-0.5 w-48 rounded border border-slate-300 bg-white py-1 shadow-lg z-50">
+          <div className="absolute left-0 top-full mt-0.5 min-w-48 w-max max-w-sm rounded border border-slate-300 bg-white py-1 shadow-lg z-50">
             <button
               type="button"
               disabled={!canUndo}
               onClick={() => handleAction(onUndo)}
-              className={`flex w-full items-center justify-between px-3 py-1 text-left text-[11px] ${
+              className={`flex w-full items-center justify-between px-3 py-1 text-left text-[11px] whitespace-nowrap ${
                 canUndo
                   ? 'text-slate-700 hover:bg-blue-50 hover:text-blue-700'
                   : 'text-slate-300 cursor-not-allowed'
               }`}
             >
               <span>{t.textGridMenu.undo}</span>
-              <span className="text-[10px] text-slate-400 font-mono">Ctrl+Z</span>
+              <span className="text-[10px] text-slate-400 font-mono ml-4">Ctrl+Z</span>
             </button>
             <button
               type="button"
               disabled={!canRedo}
               onClick={() => handleAction(onRedo)}
-              className={`flex w-full items-center justify-between px-3 py-1 text-left text-[11px] ${
+              className={`flex w-full items-center justify-between px-3 py-1 text-left text-[11px] whitespace-nowrap ${
                 canRedo
                   ? 'text-slate-700 hover:bg-blue-50 hover:text-blue-700'
                   : 'text-slate-300 cursor-not-allowed'
               }`}
             >
               <span>{t.textGridMenu.redo}</span>
-              <span className="text-[10px] text-slate-400 font-mono">Ctrl+Y</span>
+              <span className="text-[10px] text-slate-400 font-mono ml-4">Ctrl+Y</span>
             </button>
           </div>
         )}
@@ -170,39 +170,39 @@ export const TextGridMenuBar: React.FC<TextGridMenuBarProps> = ({
           type="button"
           onClick={() => toggleMenu('query')}
           onMouseEnter={() => handleMenuHover('query')}
-          className={`px-2 py-0.5 rounded hover:bg-slate-200 ${
+          className={`px-2 py-0.5 rounded whitespace-nowrap hover:bg-slate-200 ${
             activeMenu === 'query' ? 'bg-slate-300 font-semibold' : ''
           }`}
         >
           {t.textGridMenu.query}
         </button>
         {activeMenu === 'query' && (
-          <div className="absolute left-0 top-full mt-0.5 w-56 rounded border border-slate-300 bg-white py-1 shadow-lg z-50">
+          <div className="absolute left-0 top-full mt-0.5 min-w-56 w-max max-w-sm rounded border border-slate-300 bg-white py-1 shadow-lg z-50">
             <button
               type="button"
               onClick={() => handleAction(() => onQuery('cursorTime'))}
-              className="w-full px-3 py-1 text-left text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              className="w-full px-3 py-1 text-left text-[11px] whitespace-nowrap text-slate-700 hover:bg-blue-50 hover:text-blue-700"
             >
               {t.textGridMenu.getTimeOfCursor}
             </button>
             <button
               type="button"
               onClick={() => handleAction(() => onQuery('selectionStart'))}
-              className="w-full px-3 py-1 text-left text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              className="w-full px-3 py-1 text-left text-[11px] whitespace-nowrap text-slate-700 hover:bg-blue-50 hover:text-blue-700"
             >
               {t.textGridMenu.getSelectionStart}
             </button>
             <button
               type="button"
               onClick={() => handleAction(() => onQuery('selectionEnd'))}
-              className="w-full px-3 py-1 text-left text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              className="w-full px-3 py-1 text-left text-[11px] whitespace-nowrap text-slate-700 hover:bg-blue-50 hover:text-blue-700"
             >
               {t.textGridMenu.getSelectionEnd}
             </button>
             <button
               type="button"
               onClick={() => handleAction(() => onQuery('selectionLength'))}
-              className="w-full px-3 py-1 text-left text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              className="w-full px-3 py-1 text-left text-[11px] whitespace-nowrap text-slate-700 hover:bg-blue-50 hover:text-blue-700"
             >
               {t.textGridMenu.getSelectionLength}
             </button>
@@ -210,21 +210,21 @@ export const TextGridMenuBar: React.FC<TextGridMenuBarProps> = ({
             <button
               type="button"
               onClick={() => handleAction(() => onQuery('intervalLabel'))}
-              className="w-full px-3 py-1 text-left text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              className="w-full px-3 py-1 text-left text-[11px] whitespace-nowrap text-slate-700 hover:bg-blue-50 hover:text-blue-700"
             >
               {t.textGridMenu.getIntervalLabel}
             </button>
             <button
               type="button"
               onClick={() => handleAction(() => onQuery('numberOfTiers'))}
-              className="w-full px-3 py-1 text-left text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              className="w-full px-3 py-1 text-left text-[11px] whitespace-nowrap text-slate-700 hover:bg-blue-50 hover:text-blue-700"
             >
               {t.textGridMenu.getNumberOfTiers}
             </button>
             <button
               type="button"
               onClick={() => handleAction(() => onQuery('numberOfIntervals'))}
-              className="w-full px-3 py-1 text-left text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              className="w-full px-3 py-1 text-left text-[11px] whitespace-nowrap text-slate-700 hover:bg-blue-50 hover:text-blue-700"
             >
               {t.textGridMenu.getNumberOfIntervals}
             </button>
@@ -238,25 +238,25 @@ export const TextGridMenuBar: React.FC<TextGridMenuBarProps> = ({
           type="button"
           onClick={() => toggleMenu('select')}
           onMouseEnter={() => handleMenuHover('select')}
-          className={`px-2 py-0.5 rounded hover:bg-slate-200 ${
+          className={`px-2 py-0.5 rounded whitespace-nowrap hover:bg-slate-200 ${
             activeMenu === 'select' ? 'bg-slate-300 font-semibold' : ''
           }`}
         >
           {t.textGridMenu.select}
         </button>
         {activeMenu === 'select' && (
-          <div className="absolute left-0 top-full mt-0.5 w-56 rounded border border-slate-300 bg-white py-1 shadow-lg z-50">
+          <div className="absolute left-0 top-full mt-0.5 min-w-56 w-max max-w-sm rounded border border-slate-300 bg-white py-1 shadow-lg z-50">
             <button
               type="button"
               onClick={() => handleAction(() => onSelectAction('start'))}
-              className="w-full px-3 py-1 text-left text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              className="w-full px-3 py-1 text-left text-[11px] whitespace-nowrap text-slate-700 hover:bg-blue-50 hover:text-blue-700"
             >
               {t.textGridMenu.moveToStart}
             </button>
             <button
               type="button"
               onClick={() => handleAction(() => onSelectAction('end'))}
-              className="w-full px-3 py-1 text-left text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              className="w-full px-3 py-1 text-left text-[11px] whitespace-nowrap text-slate-700 hover:bg-blue-50 hover:text-blue-700"
             >
               {t.textGridMenu.moveToEnd}
             </button>
@@ -264,18 +264,18 @@ export const TextGridMenuBar: React.FC<TextGridMenuBarProps> = ({
             <button
               type="button"
               onClick={() => handleAction(() => onSelectAction('prev'))}
-              className="flex w-full items-center justify-between px-3 py-1 text-left text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              className="flex w-full items-center justify-between px-3 py-1 text-left text-[11px] whitespace-nowrap text-slate-700 hover:bg-blue-50 hover:text-blue-700"
             >
               <span>{t.textGridMenu.selectPreviousInterval}</span>
-              <span className="text-[10px] text-slate-400 font-mono">Alt+←</span>
+              <span className="text-[10px] text-slate-400 font-mono ml-4">Alt+←</span>
             </button>
             <button
               type="button"
               onClick={() => handleAction(() => onSelectAction('next'))}
-              className="flex w-full items-center justify-between px-3 py-1 text-left text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              className="flex w-full items-center justify-between px-3 py-1 text-left text-[11px] whitespace-nowrap text-slate-700 hover:bg-blue-50 hover:text-blue-700"
             >
               <span>{t.textGridMenu.selectNextInterval}</span>
-              <span className="text-[10px] text-slate-400 font-mono">Alt+→</span>
+              <span className="text-[10px] text-slate-400 font-mono ml-4">Alt+→</span>
             </button>
           </div>
         )}
@@ -287,26 +287,26 @@ export const TextGridMenuBar: React.FC<TextGridMenuBarProps> = ({
           type="button"
           onClick={() => toggleMenu('interval')}
           onMouseEnter={() => handleMenuHover('interval')}
-          className={`px-2 py-0.5 rounded hover:bg-slate-200 ${
+          className={`px-2 py-0.5 rounded whitespace-nowrap hover:bg-slate-200 ${
             activeMenu === 'interval' ? 'bg-slate-300 font-semibold' : ''
           }`}
         >
           {t.textGridMenu.interval}
         </button>
         {activeMenu === 'interval' && (
-          <div className="absolute left-0 top-full mt-0.5 w-56 rounded border border-slate-300 bg-white py-1 shadow-lg z-50">
+          <div className="absolute left-0 top-full mt-0.5 min-w-56 w-max max-w-sm rounded border border-slate-300 bg-white py-1 shadow-lg z-50">
             <button
               type="button"
               onClick={() => handleAction(onOpenNewIntervalModal)}
-              className="flex w-full items-center justify-between px-3 py-1 text-left text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              className="flex w-full items-center justify-between px-3 py-1 text-left text-[11px] whitespace-nowrap text-slate-700 hover:bg-blue-50 hover:text-blue-700"
             >
               <span>{t.textGridMenu.newIntervalOnTier}</span>
-              <span className="text-[10px] text-slate-400 font-mono">Ctrl+I</span>
+              <span className="text-[10px] text-slate-400 font-mono ml-4">Ctrl+I</span>
             </button>
             <button
               type="button"
               onClick={() => handleAction(onRemoveInterval)}
-              className="w-full px-3 py-1 text-left text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              className="w-full px-3 py-1 text-left text-[11px] whitespace-nowrap text-slate-700 hover:bg-blue-50 hover:text-blue-700"
             >
               {t.textGridMenu.removeInterval}
             </button>
@@ -314,14 +314,14 @@ export const TextGridMenuBar: React.FC<TextGridMenuBarProps> = ({
             <button
               type="button"
               onClick={() => handleAction(onOpenSetIntervalTextModal)}
-              className="w-full px-3 py-1 text-left text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              className="w-full px-3 py-1 text-left text-[11px] whitespace-nowrap text-slate-700 hover:bg-blue-50 hover:text-blue-700"
             >
               {t.textGridMenu.setIntervalText}
             </button>
             <button
               type="button"
               onClick={() => handleAction(onClearIntervalText)}
-              className="w-full px-3 py-1 text-left text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              className="w-full px-3 py-1 text-left text-[11px] whitespace-nowrap text-slate-700 hover:bg-blue-50 hover:text-blue-700"
             >
               {t.textGridMenu.clearText}
             </button>
@@ -335,43 +335,43 @@ export const TextGridMenuBar: React.FC<TextGridMenuBarProps> = ({
           type="button"
           onClick={() => toggleMenu('boundary')}
           onMouseEnter={() => handleMenuHover('boundary')}
-          className={`px-2 py-0.5 rounded hover:bg-slate-200 ${
+          className={`px-2 py-0.5 rounded whitespace-nowrap hover:bg-slate-200 ${
             activeMenu === 'boundary' ? 'bg-slate-300 font-semibold' : ''
           }`}
         >
           {t.textGridMenu.boundary}
         </button>
         {activeMenu === 'boundary' && (
-          <div className="absolute left-0 top-full mt-0.5 w-60 rounded border border-slate-300 bg-white py-1 shadow-lg z-50">
+          <div className="absolute left-0 top-full mt-0.5 min-w-60 w-max max-w-sm rounded border border-slate-300 bg-white py-1 shadow-lg z-50">
             <button
               type="button"
               onClick={() => handleAction(onAddBoundaryAtCursor)}
-              className="flex w-full items-center justify-between px-3 py-1 text-left text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              className="flex w-full items-center justify-between px-3 py-1 text-left text-[11px] whitespace-nowrap text-slate-700 hover:bg-blue-50 hover:text-blue-700"
             >
               <span>{t.textGridMenu.addBoundaryAtCursor}</span>
-              <span className="text-[10px] text-slate-400 font-mono">Enter</span>
+              <span className="text-[10px] text-slate-400 font-mono ml-4">Enter</span>
             </button>
             <button
               type="button"
               onClick={() => handleAction(onAddBoundaryOnAllTiers)}
-              className="flex w-full items-center justify-between px-3 py-1 text-left text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              className="flex w-full items-center justify-between px-3 py-1 text-left text-[11px] whitespace-nowrap text-slate-700 hover:bg-blue-50 hover:text-blue-700"
             >
               <span>{t.textGridMenu.addBoundaryOnAllTiers}</span>
-              <span className="text-[10px] text-slate-400 font-mono">Ctrl+Enter</span>
+              <span className="text-[10px] text-slate-400 font-mono ml-4">Ctrl+Enter</span>
             </button>
             <div className="my-1 border-t border-slate-200" />
             <button
               type="button"
               onClick={() => handleAction(onRemoveBoundaryAtCursor)}
-              className="flex w-full items-center justify-between px-3 py-1 text-left text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              className="flex w-full items-center justify-between px-3 py-1 text-left text-[11px] whitespace-nowrap text-slate-700 hover:bg-blue-50 hover:text-blue-700"
             >
               <span>{t.textGridMenu.removeBoundaryAtCursor}</span>
-              <span className="text-[10px] text-slate-400 font-mono">Alt+⌫</span>
+              <span className="text-[10px] text-slate-400 font-mono ml-4">Alt+⌫</span>
             </button>
             <button
               type="button"
               onClick={() => handleAction(onMoveBoundaryToCursor)}
-              className="w-full px-3 py-1 text-left text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              className="w-full px-3 py-1 text-left text-[11px] whitespace-nowrap text-slate-700 hover:bg-blue-50 hover:text-blue-700"
             >
               {t.textGridMenu.moveBoundaryToCursor}
             </button>
@@ -385,25 +385,25 @@ export const TextGridMenuBar: React.FC<TextGridMenuBarProps> = ({
           type="button"
           onClick={() => toggleMenu('tier')}
           onMouseEnter={() => handleMenuHover('tier')}
-          className={`px-2 py-0.5 rounded hover:bg-slate-200 ${
+          className={`px-2 py-0.5 rounded whitespace-nowrap hover:bg-slate-200 ${
             activeMenu === 'tier' ? 'bg-slate-300 font-semibold' : ''
           }`}
         >
           {t.textGridMenu.tier}
         </button>
         {activeMenu === 'tier' && (
-          <div className="absolute left-0 top-full mt-0.5 w-52 rounded border border-slate-300 bg-white py-1 shadow-lg z-50">
+          <div className="absolute left-0 top-full mt-0.5 min-w-52 w-max max-w-sm rounded border border-slate-300 bg-white py-1 shadow-lg z-50">
             <button
               type="button"
               onClick={() => handleAction(onOpenAddIntervalTierModal)}
-              className="w-full px-3 py-1 text-left text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              className="w-full px-3 py-1 text-left text-[11px] whitespace-nowrap text-slate-700 hover:bg-blue-50 hover:text-blue-700"
             >
               {t.textGridMenu.addIntervalTier}
             </button>
             <button
               type="button"
               onClick={() => handleAction(onOpenAddPointTierModal)}
-              className="w-full px-3 py-1 text-left text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              className="w-full px-3 py-1 text-left text-[11px] whitespace-nowrap text-slate-700 hover:bg-blue-50 hover:text-blue-700"
             >
               {t.textGridMenu.addPointTier}
             </button>
@@ -411,14 +411,14 @@ export const TextGridMenuBar: React.FC<TextGridMenuBarProps> = ({
             <button
               type="button"
               onClick={() => handleAction(onOpenDuplicateTierModal)}
-              className="w-full px-3 py-1 text-left text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              className="w-full px-3 py-1 text-left text-[11px] whitespace-nowrap text-slate-700 hover:bg-blue-50 hover:text-blue-700"
             >
               {t.textGridMenu.duplicateTier}
             </button>
             <button
               type="button"
               onClick={() => handleAction(onOpenRenameTierModal)}
-              className="w-full px-3 py-1 text-left text-[11px] text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              className="w-full px-3 py-1 text-left text-[11px] whitespace-nowrap text-slate-700 hover:bg-blue-50 hover:text-blue-700"
             >
               {t.textGridMenu.renameTier}
             </button>
@@ -426,7 +426,7 @@ export const TextGridMenuBar: React.FC<TextGridMenuBarProps> = ({
             <button
               type="button"
               onClick={() => handleAction(onOpenRemoveTierModal)}
-              className="w-full px-3 py-1 text-left text-[11px] text-red-600 hover:bg-red-50 hover:text-red-700"
+              className="w-full px-3 py-1 text-left text-[11px] whitespace-nowrap text-red-600 hover:bg-red-50 hover:text-red-700"
             >
               {t.textGridMenu.removeTier}
             </button>
