@@ -238,6 +238,10 @@ export interface PraatWorkerApi {
   textgridSetIntervalText(textgridId: number, tierNumber: number, intervalNumber: number, text: string): Promise<void>;
   textgridInsertPoint(textgridId: number, tierNumber: number, time: number, mark: string): Promise<void>;
   textgridSetPointText(textgridId: number, tierNumber: number, pointNumber: number, text: string): Promise<void>;
+  textgridAddTier(textgridId: number, position: number, name: string, isIntervalTier: boolean): Promise<void>;
+  textgridRemoveTier(textgridId: number, tierNumber: number): Promise<void>;
+  textgridDuplicateTier(textgridId: number, tierNumber: number, position: number, name: string): Promise<void>;
+  textgridRenameTier(textgridId: number, tierNumber: number, name: string): Promise<void>;
 
   // Audio export
   exportSoundAsWav(soundId: number): Promise<Uint8Array>;

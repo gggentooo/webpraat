@@ -57,6 +57,10 @@ int         praat_bridge_textgrid_remove_boundary_at_time(int textgrid_id, int t
 int         praat_bridge_textgrid_set_interval_text(int textgrid_id, int tier_number, int interval_number, const char* text);
 int         praat_bridge_textgrid_insert_point(int textgrid_id, int tier_number, double time, const char* mark);
 int         praat_bridge_textgrid_set_point_text(int textgrid_id, int tier_number, int point_number, const char* text);
+int         praat_bridge_textgrid_add_tier(int textgrid_id, int position, const char* name, int is_interval_tier);
+int         praat_bridge_textgrid_remove_tier(int textgrid_id, int tier_number);
+int         praat_bridge_textgrid_duplicate_tier(int textgrid_id, int tier_number, int position, const char* name);
+int         praat_bridge_textgrid_rename_tier(int textgrid_id, int tier_number, const char* name);
 
 // Scripting & Console output
 const char* praat_bridge_execute_script(const char* script_text);

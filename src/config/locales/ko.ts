@@ -395,4 +395,82 @@ export const ko: LocaleDictionary = {
     scriptError: '스크립트 실행 중 오류가 발생했습니다',
     closeTab: '스크립트 창 닫기',
   },
+
+  // TextGrid Editor Menu Bar & Operations (Phase 8)
+  textGridMenu: {
+    // Top-level menu headers
+    file: '파일 (File)',
+    edit: '편집 (Edit)',
+    query: '조회 (Query)',
+    select: '선택 (Select)',
+    interval: '구간 (Interval)',
+    boundary: '경계 (Boundary)',
+    tier: '층 (Tier)',
+
+    // File menu
+    exportTextGrid: 'TextGrid 파일로 저장...',
+    closeEditor: '닫기 (Close)',
+
+    // Edit menu
+    undo: '실행 취소 (Undo)',
+    redo: '다시 실행 (Redo)',
+    cutText: '텍스트 잘라내기',
+    copyText: '텍스트 복사',
+    pasteText: '텍스트 붙여넣기',
+
+    // Query menu
+    getTimeOfCursor: '커서 위치 시간 조회',
+    getSelectionStart: '선택 시작 시간 조회',
+    getSelectionEnd: '선택 종료 시간 조회',
+    getSelectionLength: '선택 구간 길이 조회',
+    getIntervalLabel: '구간 라벨 조회',
+    getNumberOfTiers: '층(Tier) 개수 조회',
+    getNumberOfIntervals: '구간 개수 조회',
+
+    // Select menu
+    moveToStart: '커서를 선택 시작점으로 이동',
+    moveToEnd: '커서를 선택 종료점으로 이동',
+    selectPreviousInterval: '이전 구간 선택',
+    selectNextInterval: '다음 구간 선택',
+
+    // Interval menu
+    newIntervalOnTier: '층에 새 구간 생성...',
+    removeInterval: '구간 삭제',
+    setIntervalText: '구간 텍스트 설정...',
+    clearText: '구간 텍스트 지우기',
+
+    // Boundary menu
+    addBoundaryAtCursor: '현재 층의 커서 위치에 경계 추가...',
+    addBoundaryOnAllTiers: '모든 층의 커서 위치에 경계 추가',
+    removeBoundaryAtCursor: '커서 위치의 경계 삭제',
+    moveBoundaryToCursor: '가장 가까운 경계를 커서로 이동',
+    boundaryCircleTooltip: '현재 층의 커서 위치에 경계 추가',
+    allTiersCircleTooltip: '모든 층의 커서 위치에 경계 추가',
+
+    // Tier menu
+    addIntervalTier: '구간 층(Interval Tier) 추가...',
+    addPointTier: '지점 층(Point Tier) 추가...',
+    duplicateTier: '층 복제...',
+    renameTier: '층 이름 변경...',
+    removeTier: '층 삭제',
+
+    // Dialogs & Prompts
+    newIntervalTitle: '층에 새 구간 생성',
+    tierPosition: '위치 (1 = 맨 위)',
+    targetTier: '층 번호',
+    tierName: '층 이름',
+    newTierName: '새 층 이름',
+    sourceTier: '복제할 층 번호',
+    intervalText: '구간 텍스트',
+    pointMark: '지점 마크 텍스트',
+    confirmRemoveTier: '정말로 "{name}" 층을 삭제하시겠습니까?',
+    cannotRemoveLastTier: '마지막 남은 층은 삭제할 수 없습니다.',
+    cursorPlacedAt: '커서 위치: {time} 초',
+    selectionRange: '선택 범위: {start} 초 ~ {end} 초 (길이: {duration} 초)',
+    intervalLabelIs: '구간 라벨: "{text}"',
+    tierCountIs: '전체 층 개수: {count}개',
+    intervalsOnTierCountIs: '{tier}번 층의 구간 개수: {count}개',
+    noSelectionOrCursor: '선택 영역 또는 커서 위치가 지정되지 않았습니다.',
+    noIntervalSelected: '선택된 구간이 없습니다.',
+  },
 };

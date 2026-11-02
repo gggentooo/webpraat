@@ -73,6 +73,10 @@ let praat_bridge_textgrid_remove_boundary_at_time: (id: number, tier_num: number
 let praat_bridge_textgrid_set_interval_text: (id: number, tier_num: number, interval_num: number, text: string) => number;
 let praat_bridge_textgrid_insert_point: (id: number, tier_num: number, time: number, mark: string) => number;
 let praat_bridge_textgrid_set_point_text: (id: number, tier_num: number, point_num: number, text: string) => number;
+let praat_bridge_textgrid_add_tier: (id: number, pos: number, name: string, is_interval_tier: number) => number;
+let praat_bridge_textgrid_remove_tier: (id: number, tier_num: number) => number;
+let praat_bridge_textgrid_duplicate_tier: (id: number, tier_num: number, pos: number, name: string) => number;
+let praat_bridge_textgrid_rename_tier: (id: number, tier_num: number, name: string) => number;
 let praat_bridge_execute_script: (text: string) => string;
 let praat_bridge_get_info_output: () => string;
 let praat_bridge_clear_info_output: () => void;
@@ -156,6 +160,10 @@ async function ensureInit(): Promise<boolean> {
   praat_bridge_textgrid_set_interval_text = Module.cwrap('praat_bridge_textgrid_set_interval_text', 'number', ['number', 'number', 'number', 'string']);
   praat_bridge_textgrid_insert_point = Module.cwrap('praat_bridge_textgrid_insert_point', 'number', ['number', 'number', 'number', 'string']);
   praat_bridge_textgrid_set_point_text = Module.cwrap('praat_bridge_textgrid_set_point_text', 'number', ['number', 'number', 'number', 'string']);
+  praat_bridge_textgrid_add_tier = Module.cwrap('praat_bridge_textgrid_add_tier', 'number', ['number', 'number', 'string', 'number']);
+  praat_bridge_textgrid_remove_tier = Module.cwrap('praat_bridge_textgrid_remove_tier', 'number', ['number', 'number']);
+  praat_bridge_textgrid_duplicate_tier = Module.cwrap('praat_bridge_textgrid_duplicate_tier', 'number', ['number', 'number', 'number', 'string']);
+  praat_bridge_textgrid_rename_tier = Module.cwrap('praat_bridge_textgrid_rename_tier', 'number', ['number', 'number', 'string']);
   praat_bridge_execute_script = Module.cwrap('praat_bridge_execute_script', 'string', ['string']);
   praat_bridge_get_info_output = Module.cwrap('praat_bridge_get_info_output', 'string', []);
   praat_bridge_clear_info_output = Module.cwrap('praat_bridge_clear_info_output', null, []);
@@ -661,6 +669,30 @@ export const praatWorkerApi: PraatWorkerApi = {
     await ensureInit();
     const ok = praat_bridge_textgrid_set_point_text(textgridId, tierNumber, pointNumber, text);
     if (!ok) throw new Error(`Failed to set point text on tier ${tierNumber}, point ${pointNumber}`);
+  },
+
+  async textgridAddTier(textgridId: number, position: number, name: string, isIntervalTier: boolean): Promise<void> {
+    await ensureInit();
+    const ok = praat_bridge_textgrid_add_tier(textgridId, position, name, isIntervalTier ? 1 : 0);
+    if (!ok) throw new Error(`Failed to add tier "${name}" at position ${position}`);
+  },
+
+  async textgridRemoveTier(textgridId: number, tierNumber: number): Promise<void> {
+    await ensureInit();
+    const ok = praat_bridge_textgrid_remove_tier(textgridId, tierNumber);
+    if (!ok) throw new Error(`Failed to remove tier ${tierNumber}`);
+  },
+
+  async textgridDuplicateTier(textgridId: number, tierNumber: number, position: number, name: string): Promise<void> {
+    await ensureInit();
+    const ok = praat_bridge_textgrid_duplicate_tier(textgridId, tierNumber, position, name);
+    if (!ok) throw new Error(`Failed to duplicate tier ${tierNumber}`);
+  },
+
+  async textgridRenameTier(textgridId: number, tierNumber: number, name: string): Promise<void> {
+    await ensureInit();
+    const ok = praat_bridge_textgrid_rename_tier(textgridId, tierNumber, name);
+    if (!ok) throw new Error(`Failed to rename tier ${tierNumber}`);
   },
 
   async exportSoundAsWav(soundId: number): Promise<Uint8Array> {

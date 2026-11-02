@@ -446,3 +446,225 @@ export function setIntervalTextInTier(
     intervals: newIntervals,
   };
 }
+
+/**
+ * Inserts an interval on an IntervalTier between tmin and tmax,
+ * adding boundaries at both ends if needed.
+ */
+export function insertIntervalOnTier(
+  tier: IntervalTier,
+  start: number,
+  end: number,
+  text = ''
+): { updatedTier: IntervalTier; newIntervalIndex: number } {
+  const s0 = Math.max(tier.xmin, Math.min(start, end));
+  const s1 = Math.min(tier.xmax, Math.max(start, end));
+
+  if (s1 - s0 < 0.0005) {
+    let curTier = tier;
+    if (s0 > tier.xmin + 0.0005 && s0 < tier.xmax - 0.0005) {
+      curTier = insertBoundaryInTier(tier, s0);
+    }
+    const idx = curTier.intervals.findIndex(
+      (it) => s0 >= it.xmin - 0.0005 && s0 <= it.xmax + 0.0005
+    );
+    return {
+      updatedTier: curTier,
+      newIntervalIndex: Math.max(0, idx),
+    };
+  }
+
+  let curTier = tier;
+
+  // Insert boundary at s0 if needed
+  if (s0 > tier.xmin + 0.0005) {
+    const existing = curTier.intervals.some(
+      (it) => Math.abs(it.xmin - s0) < 0.0005 || Math.abs(it.xmax - s0) < 0.0005
+    );
+    if (!existing) {
+      curTier = insertBoundaryInTier(curTier, s0);
+    }
+  }
+
+  // Insert boundary at s1 if needed
+  if (s1 < tier.xmax - 0.0005) {
+    const existing = curTier.intervals.some(
+      (it) => Math.abs(it.xmin - s1) < 0.0005 || Math.abs(it.xmax - s1) < 0.0005
+    );
+    if (!existing) {
+      curTier = insertBoundaryInTier(curTier, s1);
+    }
+  }
+
+  // Find the created interval
+  let targetIdx = curTier.intervals.findIndex(
+    (it) => Math.abs(it.xmin - s0) < 0.001 && Math.abs(it.xmax - s1) < 0.001
+  );
+
+  if (targetIdx === -1) {
+    targetIdx = curTier.intervals.findIndex(
+      (it) => it.xmin >= s0 - 0.001 && it.xmax <= s1 + 0.001
+    );
+  }
+
+  if (targetIdx !== -1 && text) {
+    curTier = setIntervalTextInTier(curTier, targetIdx, text);
+  }
+
+  return {
+    updatedTier: curTier,
+    newIntervalIndex: Math.max(0, targetIdx),
+  };
+}
+
+/**
+ * Removes an interval by merging it with neighbor or clearing its label.
+ */
+export function removeIntervalFromTier(
+  tier: IntervalTier,
+  intervalIndex: number
+): IntervalTier {
+  if (intervalIndex < 0 || intervalIndex >= tier.intervals.length) return tier;
+
+  if (tier.intervals.length <= 1) {
+    return setIntervalTextInTier(tier, 0, '');
+  }
+
+  if (intervalIndex > 0) {
+    return removeBoundaryFromTier(tier, intervalIndex);
+  }
+
+  // First interval: remove right boundary
+  return removeBoundaryFromTier(tier, 1);
+}
+
+/**
+ * Adds an IntervalTier to TextGridData at specified 1-based position.
+ */
+export function addIntervalTierToGrid(
+  grid: TextGridData,
+  position: number,
+  name: string
+): TextGridData {
+  const tierName = name.trim() || `Tier_${grid.tiers.length + 1}`;
+  const pos = Math.max(1, Math.min(position, grid.tiers.length + 1));
+
+  const newTier: IntervalTier = {
+    type: 'IntervalTier',
+    name: tierName,
+    xmin: grid.xmin,
+    xmax: grid.xmax,
+    intervals: [
+      {
+        id: `int_${Date.now()}_0`,
+        xmin: grid.xmin,
+        xmax: grid.xmax,
+        text: '',
+      },
+    ],
+  };
+
+  const updatedTiers = [...grid.tiers];
+  updatedTiers.splice(pos - 1, 0, newTier);
+
+  return {
+    ...grid,
+    tiers: updatedTiers,
+  };
+}
+
+/**
+ * Adds a PointTier to TextGridData at specified 1-based position.
+ */
+export function addPointTierToGrid(
+  grid: TextGridData,
+  position: number,
+  name: string
+): TextGridData {
+  const tierName = name.trim() || `Points_${grid.tiers.length + 1}`;
+  const pos = Math.max(1, Math.min(position, grid.tiers.length + 1));
+
+  const newTier: PointTier = {
+    type: 'TextTier',
+    name: tierName,
+    xmin: grid.xmin,
+    xmax: grid.xmax,
+    points: [],
+  };
+
+  const updatedTiers = [...grid.tiers];
+  updatedTiers.splice(pos - 1, 0, newTier);
+
+  return {
+    ...grid,
+    tiers: updatedTiers,
+  };
+}
+
+/**
+ * Removes a tier by index from TextGridData.
+ */
+export function removeTierFromGrid(
+  grid: TextGridData,
+  tierIndex: number
+): TextGridData {
+  if (grid.tiers.length <= 1) {
+    throw new Error('Cannot remove the last remaining tier in TextGrid');
+  }
+  if (tierIndex < 0 || tierIndex >= grid.tiers.length) return grid;
+
+  const updatedTiers = grid.tiers.filter((_, idx) => idx !== tierIndex);
+  return {
+    ...grid,
+    tiers: updatedTiers,
+  };
+}
+
+/**
+ * Duplicates a tier by index into a new position with a new name.
+ */
+export function duplicateTierInGrid(
+  grid: TextGridData,
+  tierIndex: number,
+  position: number,
+  name: string
+): TextGridData {
+  if (tierIndex < 0 || tierIndex >= grid.tiers.length) return grid;
+
+  const sourceTier = grid.tiers[tierIndex];
+  const newName = name.trim() || `${sourceTier.name}_copy`;
+  const pos = Math.max(1, Math.min(position, grid.tiers.length + 1));
+
+  const duplicated: TextGridTier = structuredClone(sourceTier);
+  duplicated.name = newName;
+
+  const updatedTiers = [...grid.tiers];
+  updatedTiers.splice(pos - 1, 0, duplicated);
+
+  return {
+    ...grid,
+    tiers: updatedTiers,
+  };
+}
+
+/**
+ * Renames a tier by index.
+ */
+export function renameTierInGrid(
+  grid: TextGridData,
+  tierIndex: number,
+  newName: string
+): TextGridData {
+  if (tierIndex < 0 || tierIndex >= grid.tiers.length) return grid;
+
+  const updatedTiers = [...grid.tiers];
+  updatedTiers[tierIndex] = {
+    ...updatedTiers[tierIndex],
+    name: newName.trim() || updatedTiers[tierIndex].name,
+  };
+
+  return {
+    ...grid,
+    tiers: updatedTiers,
+  };
+}

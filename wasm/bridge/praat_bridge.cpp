@@ -886,6 +886,91 @@ int praat_bridge_textgrid_set_point_text(int textgrid_id, int tier_number, int p
     }
 }
 
+int praat_bridge_textgrid_add_tier(int textgrid_id, int position, const char* name, int is_interval_tier) {
+    Thing obj = get_object(textgrid_id);
+    if (!obj || !Thing_isa(obj, classTextGrid)) return 0;
+    TextGrid grid = (TextGrid)obj;
+
+    try {
+        autostring32 name32 = Melder_8to32_e(name ? name : "");
+        integer pos = position;
+        if (pos <= 0 || pos > grid->tiers->size + 1) {
+            pos = grid->tiers->size + 1;
+        }
+
+        if (is_interval_tier) {
+            autoIntervalTier tier = IntervalTier_create(grid->xmin, grid->xmax);
+            Thing_setName(tier.get(), name32.get());
+            grid->tiers->addItemAtPosition_move(tier.move(), pos);
+        } else {
+            autoTextTier tier = TextTier_create(grid->xmin, grid->xmax);
+            Thing_setName(tier.get(), name32.get());
+            grid->tiers->addItemAtPosition_move(tier.move(), pos);
+        }
+        return 1;
+    } catch (MelderError) {
+        Melder_clearError();
+        return 0;
+    }
+}
+
+int praat_bridge_textgrid_remove_tier(int textgrid_id, int tier_number) {
+    Thing obj = get_object(textgrid_id);
+    if (!obj || !Thing_isa(obj, classTextGrid)) return 0;
+    TextGrid grid = (TextGrid)obj;
+
+    try {
+        if (grid->tiers->size <= 1) return 0;
+        if (tier_number < 1 || tier_number > grid->tiers->size) return 0;
+        grid->tiers->removeItem(tier_number);
+        return 1;
+    } catch (MelderError) {
+        Melder_clearError();
+        return 0;
+    }
+}
+
+int praat_bridge_textgrid_duplicate_tier(int textgrid_id, int tier_number, int position, const char* name) {
+    Thing obj = get_object(textgrid_id);
+    if (!obj || !Thing_isa(obj, classTextGrid)) return 0;
+    TextGrid grid = (TextGrid)obj;
+
+    try {
+        if (tier_number < 1 || tier_number > grid->tiers->size) return 0;
+        autostring32 name32 = Melder_8to32_e(name ? name : "");
+        integer pos = position;
+        if (pos <= 0 || pos > grid->tiers->size + 1) {
+            pos = grid->tiers->size + 1;
+        }
+
+        autoFunction newTier = Data_copy(grid->tiers->at[tier_number]);
+        if (name && name[0] != '\0') {
+            Thing_setName(newTier.get(), name32.get());
+        }
+        grid->tiers->addItemAtPosition_move(newTier.move(), pos);
+        return 1;
+    } catch (MelderError) {
+        Melder_clearError();
+        return 0;
+    }
+}
+
+int praat_bridge_textgrid_rename_tier(int textgrid_id, int tier_number, const char* name) {
+    Thing obj = get_object(textgrid_id);
+    if (!obj || !Thing_isa(obj, classTextGrid)) return 0;
+    TextGrid grid = (TextGrid)obj;
+
+    try {
+        if (tier_number < 1 || tier_number > grid->tiers->size) return 0;
+        autostring32 name32 = Melder_8to32_e(name ? name : "");
+        Thing_setName(grid->tiers->at[tier_number], name32.get());
+        return 1;
+    } catch (MelderError) {
+        Melder_clearError();
+        return 0;
+    }
+}
+
 const char* praat_bridge_execute_script(const char* script_text) {
     static std::string s_out;
     if (!script_text || script_text[0] == '\0') return "";

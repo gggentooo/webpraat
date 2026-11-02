@@ -393,6 +393,84 @@ export const en = {
     scriptError: 'Script execution failed',
     closeTab: 'Close Script',
   },
+
+  // TextGrid Editor Menu Bar & Operations (Phase 8)
+  textGridMenu: {
+    // Top-level menu headers
+    file: 'File',
+    edit: 'Edit',
+    query: 'Query',
+    select: 'Select',
+    interval: 'Interval',
+    boundary: 'Boundary',
+    tier: 'Tier',
+
+    // File menu
+    exportTextGrid: 'Save as TextGrid file...',
+    closeEditor: 'Close',
+
+    // Edit menu
+    undo: 'Undo',
+    redo: 'Redo',
+    cutText: 'Cut text',
+    copyText: 'Copy text',
+    pasteText: 'Paste text',
+
+    // Query menu
+    getTimeOfCursor: 'Get time of cursor',
+    getSelectionStart: 'Get selection start',
+    getSelectionEnd: 'Get selection end',
+    getSelectionLength: 'Get selection length',
+    getIntervalLabel: 'Get label of interval',
+    getNumberOfTiers: 'Get number of tiers',
+    getNumberOfIntervals: 'Get number of intervals',
+
+    // Select menu
+    moveToStart: 'Move cursor to start of selection',
+    moveToEnd: 'Move cursor to end of selection',
+    selectPreviousInterval: 'Select previous interval',
+    selectNextInterval: 'Select next interval',
+
+    // Interval menu
+    newIntervalOnTier: 'New interval on tier...',
+    removeInterval: 'Remove interval',
+    setIntervalText: 'Set interval text...',
+    clearText: 'Clear interval text',
+
+    // Boundary menu
+    addBoundaryAtCursor: 'Add boundary at cursor on tier...',
+    addBoundaryOnAllTiers: 'Add boundary on all tiers',
+    removeBoundaryAtCursor: 'Remove boundary at cursor',
+    moveBoundaryToCursor: 'Move nearest boundary to cursor',
+    boundaryCircleTooltip: 'Click to add boundary at cursor on this tier',
+    allTiersCircleTooltip: 'Click to add boundary at cursor on all tiers',
+
+    // Tier menu
+    addIntervalTier: 'Add interval tier...',
+    addPointTier: 'Add point tier...',
+    duplicateTier: 'Duplicate tier...',
+    renameTier: 'Rename tier...',
+    removeTier: 'Remove tier',
+
+    // Dialogs & Prompts
+    newIntervalTitle: 'New interval on tier',
+    tierPosition: 'Position (1 = top)',
+    targetTier: 'Tier number',
+    tierName: 'Tier name',
+    newTierName: 'New tier name',
+    sourceTier: 'Tier number to duplicate',
+    intervalText: 'Interval text',
+    pointMark: 'Point mark text',
+    confirmRemoveTier: 'Are you sure you want to remove tier "{name}"?',
+    cannotRemoveLastTier: 'Cannot remove the only remaining tier.',
+    cursorPlacedAt: 'Cursor is at {time} s',
+    selectionRange: 'Selection range: {start} s to {end} s (duration: {duration} s)',
+    intervalLabelIs: 'Interval label: "{text}"',
+    tierCountIs: 'Total tiers: {count}',
+    intervalsOnTierCountIs: 'Tier {tier} has {count} intervals',
+    noSelectionOrCursor: 'No selection or cursor positioned.',
+    noIntervalSelected: 'No interval selected.',
+  },
 };
 
 export type LocaleDictionary = typeof en;

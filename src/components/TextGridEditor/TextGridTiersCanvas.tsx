@@ -15,8 +15,10 @@ export interface TextGridTiersCanvasProps {
   selectedTierIndex: number;
   selectedIntervalIndex: number | null;
   tierLabelWidthPx?: number;
+  playheadTime?: number | null;
   onSelectInterval: (tierIndex: number, intervalIndex: number) => void;
   onAddBoundary: (tierIndex: number, time: number) => void;
+  onAddBoundaryAllTiers?: (time: number) => void;
   onMoveBoundary: (tierIndex: number, intervalIndex: number, newTime: number) => void;
   onRemoveBoundary: (tierIndex: number, intervalIndex: number) => void;
   onSetIntervalText: (tierIndex: number, intervalIndex: number, text: string) => void;
@@ -37,8 +39,10 @@ export const TextGridTiersCanvas: React.FC<TextGridTiersCanvasProps> = ({
   selectedTierIndex,
   selectedIntervalIndex,
   tierLabelWidthPx = TEXTGRID_TIER_LABEL_WIDTH_PX,
+  playheadTime,
   onSelectInterval,
   onAddBoundary,
+  onAddBoundaryAllTiers,
   onMoveBoundary,
   onRemoveBoundary,
   onSetIntervalText,
@@ -147,11 +151,102 @@ export const TextGridTiersCanvas: React.FC<TextGridTiersCanvasProps> = ({
   const selX1 = selection ? Math.min(100, ((Math.max(selection[0], selection[1]) - tmin) / timeSpan) * 100) : 0;
   const showSelection = selection && Math.abs(selection[1] - selection[0]) > 0.0005 && selX1 > selX0;
 
+  // Compute cursor positions for iconic Praat boundary circle buttons
+  const cursorTimes: number[] = [];
+  if (selection) {
+    const s0 = selection[0];
+    const s1 = selection[1];
+    if (Math.abs(s1 - s0) <= 0.0005) {
+      if (s0 >= tmin && s0 <= tmax) cursorTimes.push(s0);
+    } else {
+      const minS = Math.min(s0, s1);
+      const maxS = Math.max(s0, s1);
+      if (minS >= tmin && minS <= tmax) cursorTimes.push(minS);
+      if (maxS >= tmin && maxS <= tmax) cursorTimes.push(maxS);
+    }
+  } else if (playheadTime !== null && playheadTime !== undefined && playheadTime >= tmin && playheadTime <= tmax) {
+    cursorTimes.push(playheadTime);
+  }
+
+  // Check if a boundary or point already exists at given time on a tier
+  const hasBoundaryAt = (tier: IntervalTier | PointTier, time: number): boolean => {
+    if (tier.type === 'IntervalTier') {
+      const intervals = (tier as IntervalTier).intervals;
+      for (const interval of intervals) {
+        if (Math.abs(interval.xmin - time) < 0.001 || Math.abs(interval.xmax - time) < 0.001) {
+          return true;
+        }
+      }
+    } else {
+      const points = (tier as PointTier).points;
+      for (const pt of points) {
+        if (Math.abs(pt.time - time) < 0.001) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
   return (
     <div
       ref={containerRef}
       className="flex flex-col w-full bg-white select-none divide-y divide-slate-300 border-t border-slate-300 relative"
     >
+      {/* Iconic Praat Top Master Boundary Bar ("All Tiers" Circle Buttons) */}
+      <div className="relative flex items-center w-full h-[18px] bg-slate-100 border-b border-slate-300">
+        <div
+          style={{ width: `${tierLabelWidthPx}px` }}
+          className="absolute left-0 top-0 bottom-0 z-20 shrink-0 flex items-center justify-between border-r border-slate-300 bg-slate-200 px-2 text-[10px] font-semibold text-slate-500 shadow-2xs"
+        >
+          <span className="truncate">All tiers</span>
+          <span className="text-[9px] font-mono text-slate-400">●</span>
+        </div>
+
+        <div
+          style={{ marginLeft: `${tierLabelWidthPx}px` }}
+          className="relative flex-1 h-full overflow-visible bg-slate-100"
+        >
+          {/* Synchronized Selection Highlight Strip */}
+          {showSelection && (
+            <div
+              style={{
+                left: `${selX0}%`,
+                width: `${selX1 - selX0}%`,
+              }}
+              className="absolute top-0 bottom-0 pointer-events-none bg-blue-400/15 border-x border-blue-400/30 z-10"
+            />
+          )}
+
+          {/* Master "All tiers" interactive boundary circle buttons */}
+          {cursorTimes.map((cTime, cIdx) => {
+            const xPct = ((cTime - tmin) / timeSpan) * 100;
+            if (xPct < 0 || xPct > 100) return null;
+
+            return (
+              <div
+                key={`master_cursor_${cIdx}_${cTime.toFixed(4)}`}
+                style={{ left: `${xPct}%` }}
+                className="absolute top-0 bottom-0 -translate-x-1/2 flex items-center justify-center z-30 pointer-events-auto"
+              >
+                <button
+                  type="button"
+                  title="Add boundary on all tiers at cursor (Cmd/Ctrl+Enter)"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAddBoundaryAllTiers?.(cTime);
+                  }}
+                  className="w-3.5 h-3.5 rounded-full border-2 border-red-500 bg-white hover:bg-red-500 hover:border-red-600 active:scale-90 shadow-xs flex items-center justify-center transition-all group cursor-pointer"
+                >
+                  <span className="w-1 h-1 rounded-full bg-red-500 group-hover:bg-white" />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Stacked Tiers */}
       {textGrid.tiers.map((tier, tierIdx) => {
         const isTierSelected = tierIdx === selectedTierIndex;
         const tierHeight = tier.type === 'IntervalTier' ? 44 : 34;
@@ -201,6 +296,53 @@ export const TextGridTiersCanvas: React.FC<TextGridTiersCanvasProps> = ({
                   className="absolute top-0 bottom-0 pointer-events-none bg-blue-400/15 border-x border-blue-400/30 z-10"
                 />
               )}
+
+              {/* Red Cursor Line(s) across tier */}
+              {cursorTimes.map((cTime, cIdx) => {
+                const xPct = ((cTime - tmin) / timeSpan) * 100;
+                if (xPct < 0 || xPct > 100) return null;
+
+                const alreadyHasBoundary = hasBoundaryAt(tier, cTime);
+
+                return (
+                  <React.Fragment key={`cursor_line_${cIdx}_${cTime.toFixed(4)}`}>
+                    {/* Vertical Cursor Line */}
+                    <div
+                      style={{ left: `${xPct}%` }}
+                      className="absolute top-0 bottom-0 w-px bg-red-400/80 pointer-events-none z-20"
+                    />
+
+                    {/* Iconic Praat Boundary Circle Button ("Boundary Ball") */}
+                    <div
+                      style={{ left: `${xPct}%` }}
+                      className="absolute top-1 -translate-x-1/2 z-30 pointer-events-auto"
+                    >
+                      {alreadyHasBoundary ? (
+                        <div
+                          title="Boundary already exists at cursor"
+                          className="w-2.5 h-2.5 rounded-full bg-slate-400/80 border border-slate-500 shadow-2xs"
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          title="Click to add boundary at cursor on this tier (Enter)"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (tier.type === 'IntervalTier') {
+                              onAddBoundary(tierIdx, cTime);
+                            } else {
+                              onAddPoint(tierIdx, cTime);
+                            }
+                          }}
+                          className="w-3 h-3 rounded-full border border-red-500 bg-white hover:bg-red-500 hover:border-red-600 active:scale-90 shadow-2xs flex items-center justify-center transition-all group cursor-pointer"
+                        >
+                          <span className="w-1 h-1 rounded-full bg-red-500 group-hover:bg-white" />
+                        </button>
+                      )}
+                    </div>
+                  </React.Fragment>
+                );
+              })}
 
               {tier.type === 'IntervalTier' ? (
                 /* Interval Tier Rendering */
