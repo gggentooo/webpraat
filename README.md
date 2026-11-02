@@ -1,5 +1,10 @@
 # WebPraat
 ---
+This is a web port of [Praat](https://www.fon.hum.uva.nl/praat/) based on the original repository's commit `f9409a4d59c9bd99967ce36273ca87a64b4c2be3`.
+
+The code in this project was created with AI assistance. As I've made this port out of personal need, not all parts of it are human-tested. Feel free to contact me via Discord @ dawnradiance if you have any suggestions or questions related to WebPraat.
+
+The following is an agent-generated overview and build instructions of the project.
 
 ## Overview
 
