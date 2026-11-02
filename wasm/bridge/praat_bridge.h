@@ -51,6 +51,7 @@ int         praat_bridge_sound_to_textgrid(int sound_id, const char* tier_names,
 const char* praat_bridge_textgrid_to_json(int textgrid_id);
 int         praat_bridge_textgrid_save_to_file(int textgrid_id, const char* path);
 int         praat_bridge_textgrid_read_from_file(const char* path, const char* name);
+int         praat_bridge_textgrid_replace_from_file(int textgrid_id, const char* path);
 int         praat_bridge_textgrid_insert_boundary(int textgrid_id, int tier_number, double time);
 int         praat_bridge_textgrid_remove_boundary_at_time(int textgrid_id, int tier_number, double time);
 int         praat_bridge_textgrid_set_interval_text(int textgrid_id, int tier_number, int interval_number, const char* text);

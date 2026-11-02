@@ -771,6 +771,51 @@ int praat_bridge_textgrid_read_from_file(const char* path, const char* name) {
     }
 }
 
+int praat_bridge_textgrid_replace_from_file(int textgrid_id, const char* path) {
+    if (!path || path[0] == '\0') return 0;
+    try {
+        structMelderFile file;
+        Melder_pathToFile(Melder_8to32_e(path).get(), &file);
+        autoDaata obj = Data_readFromTextFile(&file);
+        if (!obj || !Thing_isa(obj.get(), classTextGrid)) {
+            obj = Data_readFromFile(&file);
+            if (!obj || !Thing_isa(obj.get(), classTextGrid)) return 0;
+        }
+
+        if (theCurrentPraatObjects) {
+            for (integer i = 1; i <= theCurrentPraatObjects -> n; ++i) {
+                if (theCurrentPraatObjects -> list [i]. id == textgrid_id) {
+                    if (theCurrentPraatObjects -> list [i]. object) {
+                        const char32* oldName = Thing_getName(theCurrentPraatObjects -> list [i]. object);
+                        if (oldName && oldName[0] != '\0') {
+                            Thing_setName(obj.get(), oldName);
+                        }
+                        forget(theCurrentPraatObjects -> list [i]. object);
+                    }
+                    theCurrentPraatObjects -> list [i]. object = obj.releaseToAmbiguousOwner();
+                    return 1;
+                }
+            }
+        }
+
+        auto it = g_objectTable.find(textgrid_id);
+        if (it != g_objectTable.end()) {
+            if (it->second) {
+                const char32* oldName = Thing_getName(it->second.get());
+                if (oldName && oldName[0] != '\0') {
+                    Thing_setName(obj.get(), oldName);
+                }
+            }
+            it->second.adoptFromAmbiguousOwner(obj.releaseToAmbiguousOwner());
+            return 1;
+        }
+        return 0;
+    } catch (MelderError) {
+        Melder_clearError();
+        return 0;
+    }
+}
+
 int praat_bridge_textgrid_insert_boundary(int textgrid_id, int tier_number, double time) {
     Thing obj = get_object(textgrid_id);
     if (!obj || !Thing_isa(obj, classTextGrid)) return 0;

@@ -23,6 +23,10 @@ export interface TextGridTiersCanvasProps {
   onAddPoint: (tierIndex: number, time: number) => void;
   onMovePoint: (tierIndex: number, pointIndex: number, newTime: number) => void;
   onSetPointText: (tierIndex: number, pointIndex: number, text: string) => void;
+  onDragBoundaryStart?: (tierIndex: number, intervalIndex: number) => void;
+  onDragBoundaryEnd?: (tierIndex: number, intervalIndex: number) => void;
+  onDragPointStart?: (tierIndex: number, pointIndex: number) => void;
+  onDragPointEnd?: (tierIndex: number, pointIndex: number) => void;
 }
 
 export const TextGridTiersCanvas: React.FC<TextGridTiersCanvasProps> = ({
@@ -41,6 +45,10 @@ export const TextGridTiersCanvas: React.FC<TextGridTiersCanvasProps> = ({
   onAddPoint,
   onMovePoint,
   onSetPointText,
+  onDragBoundaryStart,
+  onDragBoundaryEnd,
+  onDragPointStart,
+  onDragPointEnd,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -99,6 +107,11 @@ export const TextGridTiersCanvas: React.FC<TextGridTiersCanvasProps> = ({
     };
 
     const handleMouseUp = () => {
+      if (draggingBoundary) {
+        onDragBoundaryEnd?.(draggingBoundary.tierIndex, draggingBoundary.intervalIndex);
+      } else if (draggingPoint) {
+        onDragPointEnd?.(draggingPoint.tierIndex, draggingPoint.pointIndex);
+      }
       setDraggingBoundary(null);
       setDraggingPoint(null);
     };
@@ -257,6 +270,7 @@ export const TextGridTiersCanvas: React.FC<TextGridTiersCanvasProps> = ({
                           title="Drag to move boundary. Right-click to remove."
                           onMouseDown={(e) => {
                             e.stopPropagation();
+                            onDragBoundaryStart?.(tierIdx, iIdx);
                             setDraggingBoundary({
                               tierIndex: tierIdx,
                               intervalIndex: iIdx,
@@ -286,6 +300,7 @@ export const TextGridTiersCanvas: React.FC<TextGridTiersCanvasProps> = ({
                       title="Drag to move point. Double click to edit mark."
                       onMouseDown={(e) => {
                         e.stopPropagation();
+                        onDragPointStart?.(tierIdx, pIdx);
                         setDraggingPoint({ tierIndex: tierIdx, pointIndex: pIdx });
                       }}
                       onDoubleClick={(e) => {

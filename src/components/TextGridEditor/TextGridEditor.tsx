@@ -47,6 +47,34 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
   // Active interval text input
   const [activeText, setActiveText] = useState('');
 
+  // Undo / Redo history stacks
+  interface TextGridHistoryState {
+    gridData: TextGridData;
+    selectedTierIndex: number;
+    selectedIntervalIndex: number | null;
+    activeText: string;
+    selection: [number, number] | null;
+  }
+
+  const [undoStack, setUndoStack] = useState<TextGridHistoryState[]>([]);
+  const [redoStack, setRedoStack] = useState<TextGridHistoryState[]>([]);
+
+  const gridDataRef = useRef<TextGridData | null>(null);
+  gridDataRef.current = gridData;
+
+  const selectedTierIndexRef = useRef(selectedTierIndex);
+  selectedTierIndexRef.current = selectedTierIndex;
+
+  const selectedIntervalIndexRef = useRef(selectedIntervalIndex);
+  selectedIntervalIndexRef.current = selectedIntervalIndex;
+
+  const activeTextRef = useRef(activeText);
+  activeTextRef.current = activeText;
+
+  const preDragStateRef = useRef<TextGridHistoryState | null>(null);
+  const textEditOriginStateRef = useRef<TextGridHistoryState | null>(null);
+  const textEditTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Keep waveform & time ruler right-edge aligned if tiers scroll container shows a classic scrollbar
   const tiersScrollRef = useRef<HTMLDivElement>(null);
   const [tiersScrollbarWidth, setTiersScrollbarWidth] = useState(0);
@@ -73,6 +101,9 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
   const [tmax, setTmax] = useState(duration);
   const [selection, setSelection] = useState<[number, number] | null>(null);
   const [zoomHistory, setZoomHistory] = useState<Array<[number, number]>>([]);
+
+  const selectionRef = useRef(selection);
+  selectionRef.current = selection;
 
   // Audio Playback Hook
   const audioOptions = React.useMemo(() => {
@@ -179,8 +210,145 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
     seek(clamped);
   };
 
+  // TextGrid History & Worker Sync Helpers
+  const captureCurrentState = useCallback((): TextGridHistoryState | null => {
+    if (!gridDataRef.current) return null;
+    return {
+      gridData: structuredClone(gridDataRef.current),
+      selectedTierIndex: selectedTierIndexRef.current,
+      selectedIntervalIndex: selectedIntervalIndexRef.current,
+      activeText: activeTextRef.current,
+      selection: selectionRef.current ? [...selectionRef.current] : null,
+    };
+  }, []);
+
+  const syncGridToWorker = useCallback(
+    async (data: TextGridData) => {
+      try {
+        const worker = getPraatWorker();
+        await worker.updateTextGridData(textGrid.id, data);
+      } catch (err) {
+        console.warn('Worker sync failed:', err);
+      }
+    },
+    [textGrid.id]
+  );
+
+  const pushUndoState = useCallback((stateToPush: TextGridHistoryState) => {
+    setUndoStack((prev) => {
+      const next = [...prev, stateToPush];
+      if (next.length > 50) return next.slice(next.length - 50);
+      return next;
+    });
+    setRedoStack([]);
+  }, []);
+
+  const commitPendingTextEdit = useCallback(() => {
+    if (textEditTimerRef.current) {
+      clearTimeout(textEditTimerRef.current);
+      textEditTimerRef.current = null;
+    }
+    if (textEditOriginStateRef.current) {
+      const origin = textEditOriginStateRef.current;
+      textEditOriginStateRef.current = null;
+      if (
+        gridDataRef.current &&
+        JSON.stringify(origin.gridData) !== JSON.stringify(gridDataRef.current)
+      ) {
+        pushUndoState(origin);
+        syncGridToWorker(gridDataRef.current);
+      }
+    }
+  }, [pushUndoState, syncGridToWorker]);
+
+  const handleUndo = useCallback(() => {
+    commitPendingTextEdit();
+
+    setUndoStack((prevUndo) => {
+      if (prevUndo.length === 0) return prevUndo;
+      const targetState = prevUndo[prevUndo.length - 1];
+      const newUndo = prevUndo.slice(0, -1);
+
+      const currentState = captureCurrentState();
+      if (currentState) {
+        setRedoStack((prevRedo) => [...prevRedo, currentState]);
+      }
+
+      setGridData(targetState.gridData);
+      setSelectedTierIndex(targetState.selectedTierIndex);
+      setSelectedIntervalIndex(targetState.selectedIntervalIndex);
+      setActiveText(targetState.activeText);
+      setSelection(targetState.selection);
+      syncGridToWorker(targetState.gridData);
+
+      return newUndo;
+    });
+  }, [commitPendingTextEdit, captureCurrentState, syncGridToWorker]);
+
+  const handleRedo = useCallback(() => {
+    commitPendingTextEdit();
+
+    setRedoStack((prevRedo) => {
+      if (prevRedo.length === 0) return prevRedo;
+      const targetState = prevRedo[prevRedo.length - 1];
+      const newRedo = prevRedo.slice(0, -1);
+
+      const currentState = captureCurrentState();
+      if (currentState) {
+        setUndoStack((prevUndo) => [...prevUndo, currentState]);
+      }
+
+      setGridData(targetState.gridData);
+      setSelectedTierIndex(targetState.selectedTierIndex);
+      setSelectedIntervalIndex(targetState.selectedIntervalIndex);
+      setActiveText(targetState.activeText);
+      setSelection(targetState.selection);
+      syncGridToWorker(targetState.gridData);
+
+      return newRedo;
+    });
+  }, [commitPendingTextEdit, captureCurrentState, syncGridToWorker]);
+
+  // Dragging boundary & point lifecycle
+  const handleDragBoundaryStart = useCallback(() => {
+    commitPendingTextEdit();
+    preDragStateRef.current = captureCurrentState();
+  }, [commitPendingTextEdit, captureCurrentState]);
+
+  const handleDragBoundaryEnd = useCallback(() => {
+    if (preDragStateRef.current && gridDataRef.current) {
+      if (
+        JSON.stringify(preDragStateRef.current.gridData) !==
+        JSON.stringify(gridDataRef.current)
+      ) {
+        pushUndoState(preDragStateRef.current);
+        syncGridToWorker(gridDataRef.current);
+      }
+    }
+    preDragStateRef.current = null;
+  }, [pushUndoState, syncGridToWorker]);
+
+  const handleDragPointStart = useCallback(() => {
+    commitPendingTextEdit();
+    preDragStateRef.current = captureCurrentState();
+  }, [commitPendingTextEdit, captureCurrentState]);
+
+  const handleDragPointEnd = useCallback(() => {
+    if (preDragStateRef.current && gridDataRef.current) {
+      if (
+        JSON.stringify(preDragStateRef.current.gridData) !==
+        JSON.stringify(gridDataRef.current)
+      ) {
+        pushUndoState(preDragStateRef.current);
+        syncGridToWorker(gridDataRef.current);
+      }
+    }
+    preDragStateRef.current = null;
+  }, [pushUndoState, syncGridToWorker]);
+
   // TextGrid Annotation Handlers
   const handleSelectInterval = (tierIndex: number, intervalIndex: number) => {
+    commitPendingTextEdit();
     setSelectedTierIndex(tierIndex);
     setSelectedIntervalIndex(intervalIndex);
 
@@ -199,19 +367,17 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
     const tier = gridData.tiers[tierIndex];
     if (!tier || tier.type !== 'IntervalTier') return;
 
+    commitPendingTextEdit();
+    const stateBefore = captureCurrentState();
+    if (stateBefore) pushUndoState(stateBefore);
+
     const updatedTier = insertBoundaryInTier(tier as IntervalTier, time);
     const updatedTiers = [...gridData.tiers];
     updatedTiers[tierIndex] = updatedTier;
     const newGrid = { ...gridData, tiers: updatedTiers };
     setGridData(newGrid);
 
-    // Sync to worker
-    try {
-      const worker = getPraatWorker();
-      await worker.textgridInsertBoundary(textGrid.id, tierIndex + 1, time);
-    } catch (err) {
-      console.warn('Worker sync boundary failed:', err);
-    }
+    syncGridToWorker(newGrid);
   };
 
   const handleMoveBoundary = async (
@@ -234,10 +400,17 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
     const tier = gridData.tiers[tierIndex];
     if (!tier || tier.type !== 'IntervalTier') return;
 
+    commitPendingTextEdit();
+    const stateBefore = captureCurrentState();
+    if (stateBefore) pushUndoState(stateBefore);
+
     const updatedTier = removeBoundaryFromTier(tier as IntervalTier, intervalIndex);
     const updatedTiers = [...gridData.tiers];
     updatedTiers[tierIndex] = updatedTier;
-    setGridData({ ...gridData, tiers: updatedTiers });
+    const newGrid = { ...gridData, tiers: updatedTiers };
+    setGridData(newGrid);
+
+    syncGridToWorker(newGrid);
   };
 
   const handleSetIntervalText = async (
@@ -249,24 +422,21 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
     const tier = gridData.tiers[tierIndex];
     if (!tier || tier.type !== 'IntervalTier') return;
 
+    if (!textEditOriginStateRef.current) {
+      textEditOriginStateRef.current = captureCurrentState();
+    }
+
     const updatedTier = setIntervalTextInTier(tier as IntervalTier, intervalIndex, text);
     const updatedTiers = [...gridData.tiers];
     updatedTiers[tierIndex] = updatedTier;
-    setGridData({ ...gridData, tiers: updatedTiers });
+    const newGrid = { ...gridData, tiers: updatedTiers };
+    setGridData(newGrid);
     setActiveText(text);
 
-    // Sync to worker
-    try {
-      const worker = getPraatWorker();
-      await worker.textgridSetIntervalText(
-        textGrid.id,
-        tierIndex + 1,
-        intervalIndex + 1,
-        text
-      );
-    } catch (err) {
-      console.warn('Worker sync interval text failed:', err);
-    }
+    if (textEditTimerRef.current) clearTimeout(textEditTimerRef.current);
+    textEditTimerRef.current = setTimeout(() => {
+      commitPendingTextEdit();
+    }, 600);
   };
 
   const handleAddPoint = async (tierIndex: number, time: number) => {
@@ -274,12 +444,19 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
     const tier = gridData.tiers[tierIndex];
     if (!tier || tier.type !== 'TextTier') return;
 
+    commitPendingTextEdit();
+    const stateBefore = captureCurrentState();
+    if (stateBefore) pushUndoState(stateBefore);
+
     const newPoints = [...(tier as PointTier).points, { time, mark: '' }].sort(
       (a, b) => a.time - b.time
     );
     const updatedTiers = [...gridData.tiers];
     updatedTiers[tierIndex] = { ...tier, points: newPoints };
-    setGridData({ ...gridData, tiers: updatedTiers });
+    const newGrid = { ...gridData, tiers: updatedTiers };
+    setGridData(newGrid);
+
+    syncGridToWorker(newGrid);
   };
 
   const handleMovePoint = async (
@@ -307,15 +484,23 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
     const tier = gridData.tiers[tierIndex];
     if (!tier || tier.type !== 'TextTier') return;
 
+    commitPendingTextEdit();
+    const stateBefore = captureCurrentState();
+    if (stateBefore) pushUndoState(stateBefore);
+
     const newPoints = [...(tier as PointTier).points];
     newPoints[pointIndex] = { ...newPoints[pointIndex], mark: text };
     const updatedTiers = [...gridData.tiers];
     updatedTiers[tierIndex] = { ...tier, points: newPoints };
-    setGridData({ ...gridData, tiers: updatedTiers });
+    const newGrid = { ...gridData, tiers: updatedTiers };
+    setGridData(newGrid);
+
+    syncGridToWorker(newGrid);
   };
 
   // IPA palette symbol insertion
   const handleInsertIPA = (char: string) => {
+    commitPendingTextEdit();
     const newText = activeText + char;
     setActiveText(newText);
     if (selectedIntervalIndex !== null) {
@@ -325,6 +510,7 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
 
   // Export TextGrid as downloadable file
   const handleExportTextGrid = () => {
+    commitPendingTextEdit();
     if (!gridData) return;
     const serialized = serializeTextGrid(gridData);
     const blob = new Blob([serialized], { type: 'text/plain;charset=utf-8' });
@@ -334,10 +520,33 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (
+      const isInput =
         e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement
-      ) {
+        e.target instanceof HTMLTextAreaElement;
+
+      const isUndoKey =
+        (e.metaKey || e.ctrlKey) &&
+        !e.altKey &&
+        !e.shiftKey &&
+        e.key.toLowerCase() === 'z';
+
+      const isRedoKey =
+        ((e.metaKey || e.ctrlKey) && !e.altKey && e.shiftKey && e.key.toLowerCase() === 'z') ||
+        ((e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === 'y');
+
+      if (isUndoKey && !isInput) {
+        e.preventDefault();
+        handleUndo();
+        return;
+      }
+
+      if (isRedoKey && !isInput) {
+        e.preventDefault();
+        handleRedo();
+        return;
+      }
+
+      if (isInput) {
         return;
       }
 
@@ -363,7 +572,7 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPlaying, play, stop, selection, tmin, tmax]);
+  }, [handleUndo, handleRedo, isPlaying, play, stop, selection, tmin, tmax]);
 
   const visibleDuration = Math.max(0, tmax - tmin);
   const selectionDuration = selection
@@ -417,6 +626,13 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
             type="text"
             value={activeText}
             placeholder="Type interval label or click IPA symbols below..."
+            onBlur={commitPendingTextEdit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                commitPendingTextEdit();
+                e.currentTarget.blur();
+              }
+            }}
             onChange={(e) => {
               setActiveText(e.target.value);
               if (selectedIntervalIndex !== null) {
@@ -496,6 +712,10 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
                   onAddPoint={handleAddPoint}
                   onMovePoint={handleMovePoint}
                   onSetPointText={handleSetPointText}
+                  onDragBoundaryStart={handleDragBoundaryStart}
+                  onDragBoundaryEnd={handleDragBoundaryEnd}
+                  onDragPointStart={handleDragPointStart}
+                  onDragPointEnd={handleDragPointEnd}
                 />
               )}
             </div>
@@ -621,6 +841,38 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
             }`}
           >
             {t.editor.zoomBak}
+          </button>
+
+          <div className="h-4 border-l border-slate-300 mx-0.5" />
+
+          {/* Undo button */}
+          <button
+            type="button"
+            disabled={undoStack.length === 0}
+            onClick={handleUndo}
+            title="Undo (Ctrl+Z / ⌘Z)"
+            className={`rounded border px-2 py-0.5 shadow-xs ${
+              undoStack.length > 0
+                ? 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-200'
+                : 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
+            }`}
+          >
+            {t.editor.undo}
+          </button>
+
+          {/* Redo button */}
+          <button
+            type="button"
+            disabled={redoStack.length === 0}
+            onClick={handleRedo}
+            title="Redo (Ctrl+Y / ⌘⇧Z)"
+            className={`rounded border px-2 py-0.5 shadow-xs ${
+              redoStack.length > 0
+                ? 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-200'
+                : 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
+            }`}
+          >
+            {t.editor.redo}
           </button>
         </div>
       </div>

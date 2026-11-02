@@ -462,6 +462,28 @@ export const SoundEditor: React.FC<SoundEditorProps> = ({ sound, onClose }) => {
           >
             {t.editor.zoomBak}
           </button>
+
+          <div className="h-4 border-l border-slate-300 mx-0.5" />
+
+          {/* Undo button */}
+          <button
+            type="button"
+            disabled
+            title="Undo (Ctrl+Z / ⌘Z)"
+            className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 text-slate-400 cursor-not-allowed shadow-xs"
+          >
+            {t.editor.undo}
+          </button>
+
+          {/* Redo button */}
+          <button
+            type="button"
+            disabled
+            title="Redo (Ctrl+Y / ⌘⇧Z)"
+            className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 text-slate-400 cursor-not-allowed shadow-xs"
+          >
+            {t.editor.redo}
+          </button>
         </div>
       </div>
     </div>

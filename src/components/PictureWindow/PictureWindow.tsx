@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import {
   activeTabAtom,
@@ -8,7 +8,7 @@ import {
   statusMessageAtom,
   tAtom,
 } from '../../store';
-import type { PictureLineType, PraatColour } from '../../types/praat';
+import type { PictureCommand, PictureLineType, PraatColour } from '../../types/praat';
 import { downloadBlob } from '../../utils/audio';
 import {
   PAGE_INCHES,
@@ -23,6 +23,7 @@ const CANVAS_LOGICAL_PX = 648; // 54 px per inch
 
 export const PictureWindow: React.FC = () => {
   const [commands, setCommands] = useAtom(pictureCommandsAtom);
+  const [redoCommands, setRedoCommands] = useState<PictureCommand[]>([]);
   const [viewport, setViewport] = useAtom(pictureViewportAtom);
   const [pen, setPen] = useAtom(picturePenAtom);
   const setActiveTab = useSetAtom(activeTabAtom);
@@ -93,6 +94,7 @@ export const PictureWindow: React.FC = () => {
         shape: 'innerBox',
       },
     ]);
+    setRedoCommands([]);
     setStatusMessage(t.status.drawnToPicture);
   };
 
@@ -110,16 +112,65 @@ export const PictureWindow: React.FC = () => {
         text: label,
       },
     ]);
+    setRedoCommands([]);
     setStatusMessage(t.status.drawnToPicture);
   };
 
-  const handleUndo = () => {
-    setCommands((prev) => prev.slice(0, -1));
-  };
+  const handleUndo = useCallback(() => {
+    setCommands((prev) => {
+      if (prev.length === 0) return prev;
+      const last = prev[prev.length - 1];
+      setRedoCommands((r) => [...r, last]);
+      return prev.slice(0, -1);
+    });
+  }, [setCommands]);
+
+  const handleRedo = useCallback(() => {
+    setRedoCommands((prevRedo) => {
+      if (prevRedo.length === 0) return prevRedo;
+      const next = prevRedo[prevRedo.length - 1];
+      setCommands((prev) => [...prev, next]);
+      return prevRedo.slice(0, -1);
+    });
+  }, [setCommands]);
 
   const handleEraseAll = () => {
     setCommands([]);
+    setRedoCommands([]);
   };
+
+  // Keyboard undo/redo shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+
+      const isUndo =
+        (e.metaKey || e.ctrlKey) &&
+        !e.altKey &&
+        !e.shiftKey &&
+        e.key.toLowerCase() === 'z';
+
+      const isRedo =
+        ((e.metaKey || e.ctrlKey) && !e.altKey && e.shiftKey && e.key.toLowerCase() === 'z') ||
+        ((e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === 'y');
+
+      if (isUndo) {
+        e.preventDefault();
+        handleUndo();
+      } else if (isRedo) {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleUndo, handleRedo]);
 
   const handleExportSvg = () => {
     const svg = renderPictureToSvg(commands);
@@ -168,9 +219,19 @@ export const PictureWindow: React.FC = () => {
             type="button"
             disabled={commands.length === 0}
             onClick={handleUndo}
+            title="Undo (Ctrl+Z / ⌘Z)"
             className="px-2.5 py-1 text-xs font-medium text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded disabled:opacity-40 transition-colors"
           >
             {t.picture.undo}
+          </button>
+          <button
+            type="button"
+            disabled={redoCommands.length === 0}
+            onClick={handleRedo}
+            title="Redo (Ctrl+Y / ⌘⇧Z)"
+            className="px-2.5 py-1 text-xs font-medium text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded disabled:opacity-40 transition-colors"
+          >
+            {t.picture.redo}
           </button>
           <button
             type="button"

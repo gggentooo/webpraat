@@ -67,6 +67,7 @@ let praat_bridge_create_textgrid: (tmin: number, tmax: number, tier_names: strin
 let praat_bridge_sound_to_textgrid: (sound_id: number, tier_names: string, point_tiers: string) => number;
 let praat_bridge_textgrid_to_json: (id: number) => string;
 let praat_bridge_textgrid_read_from_file: (path: string, name: string) => number;
+let praat_bridge_textgrid_replace_from_file: (id: number, path: string) => number;
 let praat_bridge_textgrid_insert_boundary: (id: number, tier_num: number, time: number) => number;
 let praat_bridge_textgrid_remove_boundary_at_time: (id: number, tier_num: number, time: number) => number;
 let praat_bridge_textgrid_set_interval_text: (id: number, tier_num: number, interval_num: number, text: string) => number;
@@ -149,6 +150,7 @@ async function ensureInit(): Promise<boolean> {
   praat_bridge_sound_to_textgrid = Module.cwrap('praat_bridge_sound_to_textgrid', 'number', ['number', 'string', 'string']);
   praat_bridge_textgrid_to_json = Module.cwrap('praat_bridge_textgrid_to_json', 'string', ['number']);
   praat_bridge_textgrid_read_from_file = Module.cwrap('praat_bridge_textgrid_read_from_file', 'number', ['string', 'string']);
+  praat_bridge_textgrid_replace_from_file = Module.cwrap('praat_bridge_textgrid_replace_from_file', 'number', ['number', 'string']);
   praat_bridge_textgrid_insert_boundary = Module.cwrap('praat_bridge_textgrid_insert_boundary', 'number', ['number', 'number', 'number']);
   praat_bridge_textgrid_remove_boundary_at_time = Module.cwrap('praat_bridge_textgrid_remove_boundary_at_time', 'number', ['number', 'number', 'number']);
   praat_bridge_textgrid_set_interval_text = Module.cwrap('praat_bridge_textgrid_set_interval_text', 'number', ['number', 'number', 'number', 'string']);
@@ -611,6 +613,24 @@ export const praatWorkerApi: PraatWorkerApi = {
     } finally {
       try { Module.FS.unlink(tempPath); } catch {}
     }
+  },
+
+  async updateTextGridFromText(textgridId: number, content: string): Promise<void> {
+    await ensureInit();
+    const tempPath = `/tmp/replace_tg_${Date.now()}_${Math.random().toString(36).substring(2)}.TextGrid`;
+    const encoded = new TextEncoder().encode(content);
+    Module.FS.writeFile(tempPath, encoded);
+    try {
+      const ok = praat_bridge_textgrid_replace_from_file(textgridId, tempPath);
+      if (!ok) throw new Error(`Failed to update TextGrid ID ${textgridId} in WASM bridge`);
+    } finally {
+      try { Module.FS.unlink(tempPath); } catch {}
+    }
+  },
+
+  async updateTextGridData(textgridId: number, data: TextGridData): Promise<void> {
+    const text = serializeTextGrid(data);
+    await this.updateTextGridFromText(textgridId, text);
   },
 
   async textgridInsertBoundary(textgridId: number, tierNumber: number, time: number): Promise<void> {

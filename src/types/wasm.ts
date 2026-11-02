@@ -231,6 +231,8 @@ export interface PraatWorkerApi {
   getTextGridData(textgridId: number): Promise<TextGridData>;
   exportTextGridAsText(textgridId: number): Promise<string>;
   readTextGridFromText(content: string, name?: string): Promise<number>;
+  updateTextGridFromText(textgridId: number, content: string): Promise<void>;
+  updateTextGridData(textgridId: number, data: TextGridData): Promise<void>;
   textgridInsertBoundary(textgridId: number, tierNumber: number, time: number): Promise<void>;
   textgridRemoveBoundary(textgridId: number, tierNumber: number, time: number): Promise<void>;
   textgridSetIntervalText(textgridId: number, tierNumber: number, intervalNumber: number, text: string): Promise<void>;
