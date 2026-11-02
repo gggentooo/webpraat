@@ -1,8 +1,4 @@
 # WebPraat
-
-> **Doing Phonetics by Computer on the Web**  
-> A high-performance web port of [Praat](https://www.fon.hum.uva.nl/praat/), compiling the original C++ phonetics algorithms to WebAssembly and pairing them with a modern React 19 / TypeScript user interface.
-
 ---
 
 ## Overview
