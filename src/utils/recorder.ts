@@ -337,7 +337,11 @@ export class AudioRecorderSession {
 
     this.accumulator = new RecorderBufferAccumulator(channels, this.audioCtx.sampleRate);
 
-    await this.audioCtx.audioWorklet.addModule('${import.meta.env.BASE_URL}recorder-worklet.js');
+    const workletUrl =
+      typeof document !== 'undefined' && document.baseURI
+        ? new URL('./recorder-worklet.js', document.baseURI).href
+        : '/recorder-worklet.js';
+    await this.audioCtx.audioWorklet.addModule(workletUrl);
 
     this.sourceNode = this.audioCtx.createMediaStreamSource(this.stream);
     this.workletNode = new AudioWorkletNode(this.audioCtx, 'praat-recorder-processor', {

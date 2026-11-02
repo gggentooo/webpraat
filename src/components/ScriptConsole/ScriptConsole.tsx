@@ -5,6 +5,8 @@ import { EditorState } from '@codemirror/state';
 import { keymap } from '@codemirror/view';
 import {
   scriptTextAtom,
+  scriptNameAtom,
+  scriptRevisionAtom,
   isScriptRunningAtom,
   infoOutputAtom,
   objectsAtom,
@@ -26,6 +28,8 @@ interface ScriptConsoleProps {
 export const ScriptConsole: React.FC<ScriptConsoleProps> = ({ onClose }) => {
   const { t } = useI18n();
   const [scriptText, setScriptText] = useAtom(scriptTextAtom);
+  const [scriptName, setScriptName] = useAtom(scriptNameAtom);
+  const [scriptRevision, setScriptRevision] = useAtom(scriptRevisionAtom);
   const [isScriptRunning, setIsScriptRunning] = useAtom(isScriptRunningAtom);
   const [, setInfoOutput] = useAtom(infoOutputAtom);
   const [, setObjects] = useAtom(objectsAtom);
@@ -126,8 +130,12 @@ writeInfoLine: "Drew vowel triangle to Praat Picture!"
     setStatusMessage(t.script.running);
 
     try {
+      const codeToRun = editorViewRef.current
+        ? editorViewRef.current.state.doc.toString()
+        : scriptText;
+
       const parsedPic = parsePraatPictureScriptCommands(
-        scriptText,
+        codeToRun,
         pictureViewport,
         picturePen
       );
@@ -147,10 +155,18 @@ writeInfoLine: "Drew vowel triangle to Praat Picture!"
           return trimmed.length > 0 && !trimmed.startsWith('#') && !trimmed.startsWith(';');
         });
 
+      const resetsInfo = /(?:^|\n)\s*(?:clearinfo|writeInfo(?:Line)?\b)/im.test(codeToRun);
+
       const worker = getPraatWorker();
+      let hadScriptError = false;
       if (hasRemainingExecutable) {
         const output = await worker.executeScript(parsedPic.remainingDspScript);
-        if (output) {
+        if (output && /^Error:/i.test(output.trim())) {
+          hadScriptError = true;
+        }
+        if (resetsInfo && !hadScriptError) {
+          setInfoOutput(output || '');
+        } else if (output) {
           setInfoOutput((prev) => (prev ? prev + '\n' + output : output));
         }
       }
@@ -179,7 +195,7 @@ writeInfoLine: "Drew vowel triangle to Praat Picture!"
         setSelectedIds((prev) => prev.filter((id) => activeIdSet.has(id)));
       }
 
-      setStatusMessage(t.script.scriptCompleted);
+      setStatusMessage(hadScriptError ? t.script.scriptError : t.script.scriptCompleted);
     } catch (err: any) {
       const errMsg = err?.message || String(err);
       setInfoOutput((prev) => (prev ? `${prev}\n${errMsg}` : errMsg));
@@ -250,6 +266,25 @@ writeInfoLine: "Drew vowel triangle to Praat Picture!"
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Sync external updates (e.g., MenuBar New/Open Praat script or OPFS restore) into CodeMirror
+  useEffect(() => {
+    const view = editorViewRef.current;
+    if (!view) return;
+    const currentDoc = view.state.doc.toString();
+    if (currentDoc !== scriptText) {
+      view.dispatch({
+        changes: { from: 0, to: currentDoc.length, insert: scriptText },
+      });
+    }
+  }, [scriptText, scriptRevision]);
+
+  // Focus the CodeMirror editor when explicitly creating or opening a script
+  useEffect(() => {
+    if (scriptRevision > 0) {
+      editorViewRef.current?.focus();
+    }
+  }, [scriptRevision]);
+
   const updateEditorDoc = (newText: string) => {
     setScriptText(newText);
     if (editorViewRef.current) {
@@ -260,6 +295,14 @@ writeInfoLine: "Drew vowel triangle to Praat Picture!"
         });
       }
     }
+  };
+
+  const handleNewScript = () => {
+    updateEditorDoc('');
+    setScriptName(t.script.untitledScript);
+    setScriptRevision((r) => r + 1);
+    setStatusMessage(t.script.newScriptCreated);
+    setTimeout(() => setStatusMessage(''), 3000);
   };
 
   const handleClearScript = () => {
@@ -278,28 +321,41 @@ writeInfoLine: "Drew vowel triangle to Praat Picture!"
     const key = e.target.value;
     if (key && SAMPLE_SCRIPTS[key]) {
       updateEditorDoc(SAMPLE_SCRIPTS[key]);
+      setScriptName(`${key}.praat`);
     }
     e.target.value = '';
   };
 
   const handleSaveScript = () => {
-    const blob = new Blob([scriptText], { type: 'text/plain;charset=utf-8' });
-    downloadBlob(blob, 'script.praat');
+    const content = editorViewRef.current
+      ? editorViewRef.current.state.doc.toString()
+      : scriptText;
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const filename = scriptName && scriptName.trim() ? scriptName.trim() : t.script.untitledScript;
+    downloadBlob(blob, filename.includes('.') ? filename : `${filename}.praat`);
   };
 
-  const handleOpenScriptFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleOpenScriptFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     const file = files[0];
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = event.target?.result;
-      if (typeof content === 'string') {
-        updateEditorDoc(content);
-      }
-    };
-    reader.readAsText(file);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    try {
+      const content = await file.text();
+      updateEditorDoc(content);
+      setScriptName(file.name);
+      setScriptRevision((r) => r + 1);
+      setStatusMessage(`${t.script.scriptLoaded}: ${file.name}`);
+      setTimeout(() => {
+        alert(`${t.script.scriptLoadSuccess}\n${file.name}`);
+      }, 30);
+    } catch (err: any) {
+      const reason = err?.message || String(err);
+      setStatusMessage(t.script.scriptLoadError);
+      alert(`${t.script.scriptLoadError}: ${reason}`);
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      setTimeout(() => setStatusMessage(''), 3000);
+    }
   };
 
   return (
@@ -307,7 +363,7 @@ writeInfoLine: "Drew vowel triangle to Praat Picture!"
       <input
         ref={fileInputRef}
         type="file"
-        accept=".praat,.txt"
+        accept=".praat,.psc,.script,.txt,text/plain"
         className="hidden"
         onChange={handleOpenScriptFile}
       />
@@ -341,6 +397,21 @@ writeInfoLine: "Drew vowel triangle to Praat Picture!"
           </span>
 
           <div className="h-4 border-r border-slate-300 mx-1 shrink-0" />
+
+          <span
+            className="rounded border border-slate-200 bg-white px-2 py-0.5 font-mono text-[11px] text-slate-700 whitespace-nowrap shrink-0"
+            title={scriptName}
+          >
+            {scriptName || t.script.untitledScript}
+          </span>
+
+          <button
+            type="button"
+            onClick={handleNewScript}
+            className="rounded border border-slate-300 bg-white px-2.5 py-1 text-slate-700 hover:bg-slate-50 active:bg-slate-100 whitespace-nowrap shrink-0"
+          >
+            {t.script.newScript}
+          </button>
 
           <button
             type="button"

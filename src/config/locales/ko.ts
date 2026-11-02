@@ -394,6 +394,12 @@ export const ko: LocaleDictionary = {
     shortcutHint: 'Ctrl+Enter로 실행',
     scriptCompleted: '스크립트가 성공적으로 실행되었습니다',
     scriptError: '스크립트 실행 중 오류가 발생했습니다',
+    untitledScript: 'untitled.praat',
+    newScript: '새 스크립트',
+    newScriptCreated: '새 빈 Praat 스크립트를 생성했습니다',
+    scriptLoaded: '스크립트 불러오기 완료',
+    scriptLoadSuccess: 'Praat 스크립트를 성공적으로 불러왔습니다:',
+    scriptLoadError: 'Praat 스크립트를 불러오지 못했습니다',
     closeTab: '스크립트 창 닫기',
   },
 

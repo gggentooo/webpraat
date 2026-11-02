@@ -392,6 +392,12 @@ export const en = {
     shortcutHint: 'Ctrl+Enter to run',
     scriptCompleted: 'Script executed successfully',
     scriptError: 'Script execution failed',
+    untitledScript: 'untitled.praat',
+    newScript: 'New',
+    newScriptCreated: 'Created new empty Praat script',
+    scriptLoaded: 'Loaded script',
+    scriptLoadSuccess: 'Praat script loaded successfully:',
+    scriptLoadError: 'Failed to load Praat script',
     closeTab: 'Close Script',
   },
 

@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import praatWorkerApi from './workers/praatWorker';
+import praatWorkerApi, { resolvePraatWasmUrl } from './workers/praatWorker';
 import { en } from './config/locales/en';
 import { ko } from './config/locales/ko';
 
@@ -135,6 +135,51 @@ describe('Phase 6: Scripting Console & WASM Script Execution', () => {
     });
   });
 
+  describe('WASM Binary URL Resolution (Regression Tests)', () => {
+    it('uses explicit main-thread customUrl when provided', () => {
+      const url = resolvePraatWasmUrl(
+        'praatlib.wasm',
+        'https://webpraat.lnaba.reisen/assets/',
+        'https://webpraat.lnaba.reisen/praatlib.wasm'
+      );
+      expect(url).toBe('https://webpraat.lnaba.reisen/praatlib.wasm');
+      expect(url).not.toContain('${import.meta.env');
+    });
+
+    it('resolves Vite dev worker URL back to application root', () => {
+      const url = resolvePraatWasmUrl(
+        'praatlib.wasm',
+        '',
+        null,
+        'http://localhost:5173/src/workers/praatWorker.ts'
+      );
+      expect(url).toBe('http://localhost:5173/praatlib.wasm');
+    });
+
+    it('resolves production worker bundle URL in /assets/ on root domain and GitHub Pages subpath', () => {
+      const rootProdUrl = resolvePraatWasmUrl(
+        'praatlib.wasm',
+        '',
+        null,
+        'https://webpraat.lnaba.reisen/assets/praatWorker-CSa72_1x.js'
+      );
+      expect(rootProdUrl).toBe('https://webpraat.lnaba.reisen/praatlib.wasm');
+
+      const subpathProdUrl = resolvePraatWasmUrl(
+        'praatlib.wasm',
+        '',
+        null,
+        'https://gggentooo.github.io/webpraat/assets/praatWorker-CSa72_1x.js'
+      );
+      expect(subpathProdUrl).toBe('https://gggentooo.github.io/webpraat/praatlib.wasm');
+    });
+
+    it('falls back to prefix + path in Node/Vitest environments', () => {
+      const nodeUrl = resolvePraatWasmUrl('praatlib.wasm', '/Users/test/public/', null, null);
+      expect(nodeUrl).toBe('/Users/test/public/praatlib.wasm');
+    });
+  });
+
   describe('Phase 6 Localization Parity', () => {
     it('has identical script console keys in en and ko dictionaries', () => {
       const enKeys = Object.keys(en.script).sort();
@@ -142,11 +187,18 @@ describe('Phase 6: Scripting Console & WASM Script Execution', () => {
       expect(koKeys).toEqual(enKeys);
     });
 
-    it('has newPraatScript and openPraatScript menu commands in both locales', () => {
+    it('has newPraatScript, openPraatScript, and script import feedback strings in both locales', () => {
       expect(en.commands.newPraatScript).toBe('New Praat script');
       expect(en.commands.openPraatScript).toBe('Open Praat script...');
       expect(ko.commands.newPraatScript).toBe('새 Praat 스크립트');
       expect(ko.commands.openPraatScript).toBe('Praat 스크립트 열기...');
+
+      expect(en.script.untitledScript).toBe('untitled.praat');
+      expect(ko.script.untitledScript).toBe('untitled.praat');
+      expect(en.script.scriptLoadSuccess.length).toBeGreaterThan(0);
+      expect(ko.script.scriptLoadSuccess.length).toBeGreaterThan(0);
+      expect(en.script.scriptLoadError.length).toBeGreaterThan(0);
+      expect(ko.script.scriptLoadError.length).toBeGreaterThan(0);
     });
 
     it('ensures all Korean script strings are non-empty translated strings', () => {

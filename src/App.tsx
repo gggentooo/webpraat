@@ -7,6 +7,8 @@ import {
   objectsAtom,
   selectedIdsAtom,
   scriptTextAtom,
+  scriptNameAtom,
+  scriptRevisionAtom,
   statusMessageAtom,
   isProcessingAtom,
   workspaceHydratedAtom,
@@ -32,6 +34,8 @@ export default function App() {
   const [objects, setObjects] = useAtom(objectsAtom);
   const setSelectedIds = useSetAtom(selectedIdsAtom);
   const [scriptText, setScriptText] = useAtom(scriptTextAtom);
+  const scriptName = useAtomValue(scriptNameAtom);
+  const setScriptRevision = useSetAtom(scriptRevisionAtom);
   const [statusMessage, setStatusMessage] = useAtom(statusMessageAtom);
   const isProcessing = useAtomValue(isProcessingAtom);
   const [hydrated, setHydrated] = useAtom(workspaceHydratedAtom);
@@ -53,6 +57,7 @@ export default function App() {
           }
           if (restored.scriptText) {
             setScriptText(restored.scriptText);
+            setScriptRevision((r) => r + 1);
           }
         }
       } catch (err) {
@@ -199,6 +204,7 @@ export default function App() {
                 className="mr-1 whitespace-nowrap"
               >
                 {t.script.title}
+                {activeTab === 'script' && scriptName ? ` (${scriptName})` : ''}
               </button>
               {activeTab === 'script' && (
                 <button

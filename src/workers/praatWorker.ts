@@ -34,6 +34,55 @@ import createPraatModule from '../../public/praatlib.js';
 
 let Module: any = null;
 let initialized = false;
+let configuredWasmUrl: string | null = null;
+
+/**
+ * Resolves the absolute or filesystem path to `praatlib.wasm` across:
+ * 1. Explicit URL provided by the main thread (`document.baseURI` resolution)
+ * 2. Browser main thread (`window` + `document.baseURI`)
+ * 3. Browser Web Worker (`WorkerGlobalScope` in Vite dev or `dist/assets/` prod bundle)
+ * 4. Node.js / Vitest test environment (`prefix + path`)
+ */
+export function resolvePraatWasmUrl(
+  path: string,
+  prefix: string,
+  customUrl?: string | null,
+  workerLocationHref?: string | null
+): string {
+  if (!path.endsWith('.wasm')) {
+    return (prefix || '') + path;
+  }
+
+  if (customUrl) {
+    return customUrl;
+  }
+
+  const workerHref =
+    workerLocationHref ??
+    (typeof self !== 'undefined' && 'WorkerGlobalScope' in self ? self.location.href : null);
+
+  if (workerHref) {
+    const devWorkerMarker = '/src/workers/';
+    const devIdx = workerHref.indexOf(devWorkerMarker);
+    if (devIdx !== -1) {
+      const appRoot = workerHref.slice(0, devIdx + 1);
+      return new URL(path, appRoot).href;
+    }
+    const assetsMarker = '/assets/';
+    const assetsIdx = workerHref.lastIndexOf(assetsMarker);
+    if (assetsIdx !== -1) {
+      const appRoot = workerHref.slice(0, assetsIdx + 1);
+      return new URL(path, appRoot).href;
+    }
+    return new URL(`./${path}`, workerHref).href;
+  }
+
+  if (typeof window !== 'undefined' && typeof document !== 'undefined' && document.baseURI) {
+    return new URL(`./${path}`, document.baseURI).href;
+  }
+
+  return (prefix || '') + path;
+}
 
 // Wrapped bridge functions
 let praat_bridge_init: () => number;
@@ -108,17 +157,17 @@ let praat_bridge_artword_speaker_to_sound: (artword_id: number, speaker_id: numb
 async function ensureInit(): Promise<boolean> {
   if (initialized && Module) return true;
 
-  Module = await createPraatModule({
-    locateFile(path: string, prefix: string) {
-      if (path.endsWith('.wasm')) {
-        if (typeof window !== 'undefined' || (typeof self !== 'undefined' && 'WorkerGlobalScope' in self)) {
-          return '${import.meta.env.BASE_URL}praatlib.wasm';
-        }
-        return (prefix || '') + path;
-      }
-      return (prefix || '') + path;
-    },
-  });
+  try {
+    Module = await createPraatModule({
+      locateFile(path: string, prefix: string) {
+        return resolvePraatWasmUrl(path, prefix, configuredWasmUrl);
+      },
+    });
+  } catch (err) {
+    Module = null;
+    initialized = false;
+    throw err;
+  }
 
   praat_bridge_init = Module.cwrap('praat_bridge_init', 'number', []);
   praat_bridge_create_sound = Module.cwrap('praat_bridge_create_sound', 'number', ['number', 'number', 'number', 'number', 'string']);
@@ -199,6 +248,10 @@ async function ensureInit(): Promise<boolean> {
 }
 
 export const praatWorkerApi: PraatWorkerApi = {
+  setWasmUrl(url: string): void {
+    configuredWasmUrl = url;
+  },
+
   async init(): Promise<boolean> {
     return ensureInit();
   },

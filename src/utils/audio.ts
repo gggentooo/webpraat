@@ -17,6 +17,10 @@ export function getPraatWorker(): Comlink.Remote<PraatWorkerApi> {
       { type: 'module' }
     );
     workerInstance = Comlink.wrap<PraatWorkerApi>(worker);
+    if (typeof document !== 'undefined' && document.baseURI) {
+      const wasmUrl = new URL('./praatlib.wasm', document.baseURI).href;
+      void workerInstance.setWasmUrl(wasmUrl);
+    }
   }
   return workerInstance;
 }

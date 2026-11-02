@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import {
   objectsAtom,
   selectedIdsAtom,
@@ -11,6 +11,8 @@ import {
   isProcessingAtom,
   activeTabAtom,
   scriptTextAtom,
+  scriptNameAtom,
+  scriptRevisionAtom,
 } from '../../store';
 import { useI18n } from '../../hooks/useI18n';
 import { getPraatWorker, loadAudioFile, exportSoundToWavBlob, downloadBlob } from '../../utils/audio';
@@ -24,6 +26,8 @@ export const MenuBar: React.FC = () => {
   const [, setInfoOutput] = useAtom(infoOutputAtom);
   const [, setActiveTab] = useAtom(activeTabAtom);
   const [scriptText, setScriptText] = useAtom(scriptTextAtom);
+  const setScriptName = useSetAtom(scriptNameAtom);
+  const setScriptRevision = useSetAtom(scriptRevisionAtom);
   const [statusMessage, setStatusMessage] = useAtom(statusMessageAtom);
   const isProcessing = useAtomValue(isProcessingAtom);
   const selectedSound = useAtomValue(singleSelectedSoundAtom);
@@ -142,20 +146,38 @@ export const MenuBar: React.FC = () => {
     }
   };
 
-  const handleScriptFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleNewPraatScript = () => {
+    setScriptText('');
+    setScriptName(t.script.untitledScript);
+    setScriptRevision((r) => r + 1);
+    setActiveTab('script');
+    setStatusMessage(t.script.newScriptCreated);
+    setTimeout(() => setStatusMessage(''), 3000);
+    setActiveMenu(null);
+  };
+
+  const handleScriptFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     const file = files[0];
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = event.target?.result;
-      if (typeof content === 'string') {
-        setScriptText(content);
-        setActiveTab('script');
-      }
-    };
-    reader.readAsText(file);
-    if (scriptFileInputRef.current) scriptFileInputRef.current.value = '';
+    try {
+      const content = await file.text();
+      setScriptText(content);
+      setScriptName(file.name);
+      setScriptRevision((r) => r + 1);
+      setActiveTab('script');
+      setStatusMessage(`${t.script.scriptLoaded}: ${file.name}`);
+      setTimeout(() => {
+        alert(`${t.script.scriptLoadSuccess}\n${file.name}`);
+      }, 30);
+    } catch (err: any) {
+      const reason = err?.message || String(err);
+      setStatusMessage(t.script.scriptLoadError);
+      alert(`${t.script.scriptLoadError}: ${reason}`);
+    } finally {
+      if (scriptFileInputRef.current) scriptFileInputRef.current.value = '';
+      setTimeout(() => setStatusMessage(''), 3000);
+    }
   };
 
   return (
@@ -177,7 +199,7 @@ export const MenuBar: React.FC = () => {
       <input
         ref={scriptFileInputRef}
         type="file"
-        accept=".praat,.txt"
+        accept=".praat,.psc,.script,.txt,text/plain"
         className="hidden"
         onChange={handleScriptFileChange}
       />
@@ -204,10 +226,7 @@ export const MenuBar: React.FC = () => {
               <button
                 type="button"
                 className="w-full px-3 py-1 text-left whitespace-nowrap hover:bg-blue-600 hover:text-white"
-                onClick={() => {
-                  setActiveTab('script');
-                  setActiveMenu(null);
-                }}
+                onClick={handleNewPraatScript}
               >
                 {t.commands.newPraatScript}
               </button>

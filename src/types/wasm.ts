@@ -175,6 +175,7 @@ export interface SoundAnalysisResult {
  * Interface exposed by the Web Worker via Comlink.
  */
 export interface PraatWorkerApi {
+  setWasmUrl(url: string): Promise<void> | void;
   init(): Promise<boolean>;
   
   // Sound creation
