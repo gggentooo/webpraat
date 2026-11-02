@@ -5,6 +5,21 @@ All notable feature implementations, bug fixes, debuggings, and build/deployment
 ---
 
 ## `HEAD` — 2026-11-02
+**`docs(license): add WebPraat Non-Commercial & Attribution license and update project metadata`**
+
+- **Licensing & Documentation**:
+  - **License Document (`LICENSE`)**:
+    - Created comprehensive license document inheriting free use from Praat's open-source heritage for personal, educational, and academic research purposes.
+    - Added mandatory attribution clause requiring all redistributions, forks, or derivative works to retain copyright notices and credit `gggentooo/webpraat` (`https://github.com/gggentooo/webpraat`) as well as original Praat creators (Paul Boersma & David Weenink).
+    - Enforced strict non-commercial restriction prohibiting any revenue generation, commercial sale, licensing, paywalls, or monetized deployments derived from repository code or built applications without prior written consent.
+    - Included full text of the GNU General Public License v3.0 (GPL-3.0) for compliance with the upstream C++ Praat DSP core.
+  - **Metadata & Documentation (`package.json`, `README.md`)**:
+    - Updated `package.json` with `"license": "SEE LICENSE IN LICENSE"`.
+    - Updated `README.md` `Credits & License` section detailing the free use, attribution to `gggentooo/webpraat`, and non-commercial terms.
+
+---
+
+## `b06f52a` — 2026-11-02
 **`feat(phase9): implement interactive scripting, form/pause dialogs & local directory mounting`**
 
 - **Feature Implementations**:

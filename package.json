@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Web port of Praat phonetics software — WASM core + React/TypeScript frontend",
   "private": true,
+  "license": "SEE LICENSE IN LICENSE",
   "type": "module",
   "scripts": {
     "dev": "vite",

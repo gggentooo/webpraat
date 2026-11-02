@@ -175,7 +175,10 @@ For comprehensive technical details, consult the documents in the [`docs/`](./do
 - **Original Praat Software**:
   - Developed by **Paul Boersma** and **David Weenink** at the Department of Phonetic Sciences, University of Amsterdam.
   - Official website: [https://www.fon.hum.uva.nl/praat/](https://www.fon.hum.uva.nl/praat/)
-  - Original Praat source code is licensed under the **GNU General Public License (GPL)**.
+  - Original Praat source code is licensed under the **GNU General Public License (GPL v3.0 or later)**.
 - **WebPraat**:
-  - Web port architecture, C bridge, Web Worker integration, and React 19 interface by the WebPraat project contributors.
-  - Licensed under the **GNU General Public License v3.0 (GPL-3.0)** to maintain compatibility with Praat's core algorithms.
+  - Web port architecture, C bridge, Web Worker integration, and React 19 interface created by [**gggentooo**](https://github.com/gggentooo) and contributors.
+  - Distributed under the **WebPraat Non-Commercial & Attribution License** (see [LICENSE](./LICENSE)):
+    1. **Free Use**: Freely usable and modifiable for personal, academic, scientific, and educational non-commercial purposes.
+    2. **Mandatory Attribution**: Redistribution of code, forks, or derivative works is permitted but requires preserving copyright notices and prominently crediting the original repository ([`gggentooo/webpraat`](https://github.com/gggentooo/webpraat)) and original Praat authors.
+    3. **Non-Commercial Restriction**: Generating revenue, selling, charging fees, or monetizing repository code, compiled WebAssembly binaries, or built/hosted applications is strictly prohibited without prior written permission.
