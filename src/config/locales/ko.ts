@@ -48,6 +48,7 @@ export const ko: LocaleDictionary = {
     // Open menu
     readFromFile: '파일에서 읽기...',
     openLongSoundFile: '긴 사운드 파일 열기...',
+    mountLocalFolder: '로컬 폴더 마운트...',
 
     // Save menu
     saveAsWavFile: 'WAV 파일로 저장...',
@@ -333,6 +334,8 @@ export const ko: LocaleDictionary = {
     articulatorySoundSynthesized: '조음 음성 합성 사운드가 생성되었습니다.',
     textGridCreated: 'TextGrid가 생성되었습니다.',
     textGridLoaded: 'TextGrid 파일을 성공적으로 불러왔습니다.',
+    textGridSaved: 'TextGrid 파일이 저장되었습니다.',
+    folderMounted: '로컬 폴더를 /workspace 경로에 마운트했습니다.',
     drawnToPicture: 'Praat 그림창(Picture)에 요소를 그렸습니다.',
     pictureExported: 'Praat 그림 파일이 내보내졌습니다.',
     workspaceSaved: '작업 공간이 OPFS에 저장되었습니다.',
@@ -401,6 +404,13 @@ export const ko: LocaleDictionary = {
     scriptLoadSuccess: 'Praat 스크립트를 성공적으로 불러왔습니다:',
     scriptLoadError: 'Praat 스크립트를 불러오지 못했습니다',
     closeTab: '스크립트 창 닫기',
+    scriptFormTitle: 'Praat 스크립트 폼 (Form)',
+    mountFolder: '폴더 마운트...',
+    mountedFolder: '마운트된 폴더',
+    useMountedFolder: '마운트된 폴더 사용',
+    scriptPaused: '스크립트 실행 일시 중단',
+    scriptResumed: '스크립트 실행 재개',
+    scriptAborted: '사용자에 의해 스크립트 실행이 중단되었습니다',
   },
 
   // TextGrid Editor Menu Bar & Operations (Phase 8)

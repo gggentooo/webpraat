@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useSetAtom } from 'jotai';
-import { infoOutputAtom, statusMessageAtom } from '../../store';
+import { useSetAtom, useAtomValue } from 'jotai';
+import { infoOutputAtom, statusMessageAtom, mountedDirectoryAtom } from '../../store';
 import { useI18n } from '../../hooks/useI18n';
 import { useAudio } from '../../hooks/useAudio';
 import { getPraatWorker, downloadBlob } from '../../utils/audio';
+import { writeBackFile } from '../../utils/vfs';
 import {
   serializeTextGrid,
   insertBoundaryInTier,
@@ -47,6 +48,7 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
   const { t } = useI18n();
   const setInfoOutput = useSetAtom(infoOutputAtom);
   const setStatusMessage = useSetAtom(statusMessageAtom);
+  const mountedDir = useAtomValue(mountedDirectoryAtom);
 
   // Audio samples & metadata
   const [channels, setChannels] = useState<Float64Array[]>([]);
@@ -524,14 +526,35 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
     }
   };
 
-  // Export TextGrid as downloadable file
-  const handleExportTextGrid = useCallback(() => {
+  // Export TextGrid as downloadable file or save to mounted VFS & local folder
+  const handleExportTextGrid = useCallback(async () => {
     commitPendingTextEdit();
     if (!gridDataRef.current) return;
     const serialized = serializeTextGrid(gridDataRef.current);
+    const worker = getPraatWorker();
+
+    try {
+      await worker.updateTextGridData(textGrid.id, gridDataRef.current);
+    } catch (err) {
+      console.warn('Failed to sync TextGrid to WASM object:', err);
+    }
+
+    if (mountedDir) {
+      try {
+        const fileName = `${textGrid.name}.TextGrid`;
+        await writeBackFile(worker, mountedDir, `textgrids/${fileName}`, serialized);
+        await writeBackFile(worker, mountedDir, fileName, serialized);
+        setStatusMessage(`${t.status.textGridSaved}: ${fileName}`);
+        return;
+      } catch (err) {
+        console.error('Failed to write back to mounted folder:', err);
+      }
+    }
+
     const blob = new Blob([serialized], { type: 'text/plain;charset=utf-8' });
     downloadBlob(blob, `${textGrid.name}.TextGrid`);
-  }, [commitPendingTextEdit, textGrid.name]);
+    setStatusMessage(`${t.status.textGridSaved}: ${textGrid.name}.TextGrid`);
+  }, [commitPendingTextEdit, textGrid.name, textGrid.id, mountedDir, setStatusMessage, t]);
 
   // Get current cursor time (from selection start, playhead, or viewport center)
   const getCursorTime = useCallback((): number => {

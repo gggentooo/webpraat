@@ -55,5 +55,10 @@ int UiPause_end (int numberOfContinueButtons, int defaultContinueButton, int can
 void UiPause_cleanUp ();
 void UiPause_interpreterGoesAway (Interpreter interpreter);
 
+bool UiPause_isPaused ();
+const char* UiPause_getPauseDataJson ();
+int UiPause_resume (int clickedButton, const char* jsonVariables);
+void UiPause_abort ();
+
 /* End of file UiPause.h */
 #endif

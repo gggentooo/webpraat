@@ -13,9 +13,11 @@ import {
   scriptTextAtom,
   scriptNameAtom,
   scriptRevisionAtom,
+  mountedDirectoryAtom,
 } from '../../store';
 import { useI18n } from '../../hooks/useI18n';
 import { getPraatWorker, loadAudioFile, exportSoundToWavBlob, downloadBlob } from '../../utils/audio';
+import { mountLocalFolder } from '../../utils/vfs';
 import { clearWorkspaceFromOpfs, saveWorkspaceToOpfs } from '../../utils/persistence';
 
 export const MenuBar: React.FC = () => {
@@ -32,11 +34,25 @@ export const MenuBar: React.FC = () => {
   const isProcessing = useAtomValue(isProcessingAtom);
   const selectedSound = useAtomValue(singleSelectedSoundAtom);
   const selectedTextGrid = useAtomValue(singleSelectedTextGridAtom);
+  const setMountedDir = useSetAtom(mountedDirectoryAtom);
 
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scriptFileInputRef = useRef<HTMLInputElement>(null);
   const menuBarRef = useRef<HTMLDivElement>(null);
+
+  const handleMountFolder = async () => {
+    const worker = getPraatWorker();
+    try {
+      const res = await mountLocalFolder(worker);
+      if (res) {
+        setMountedDir(res);
+        setStatusMessage(`${t.status.folderMounted}: ${res.name}`);
+      }
+    } catch (err: any) {
+      alert(`Mount folder failed: ${err?.message || err}`);
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -240,6 +256,16 @@ export const MenuBar: React.FC = () => {
               >
                 {t.commands.openPraatScript}
               </button>
+              <button
+                type="button"
+                className="w-full px-3 py-1 text-left whitespace-nowrap hover:bg-blue-600 hover:text-white"
+                onClick={() => {
+                  setActiveMenu(null);
+                  void handleMountFolder();
+                }}
+              >
+                {t.commands.mountLocalFolder}
+              </button>
               <div className="my-1 border-t border-slate-200" />
               <button
                 type="button"
@@ -387,6 +413,16 @@ export const MenuBar: React.FC = () => {
                 }}
               >
                 {t.commands.readFromFile}
+              </button>
+              <button
+                type="button"
+                className="w-full px-3 py-1 text-left whitespace-nowrap hover:bg-blue-600 hover:text-white"
+                onClick={() => {
+                  setActiveMenu(null);
+                  void handleMountFolder();
+                }}
+              >
+                {t.commands.mountLocalFolder}
               </button>
             </div>
           )}

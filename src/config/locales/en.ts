@@ -46,6 +46,7 @@ export const en = {
     // Open menu
     readFromFile: 'Read from file...',
     openLongSoundFile: 'Open long sound file...',
+    mountLocalFolder: 'Mount local folder...',
 
     // Save menu
     saveAsWavFile: 'Save as WAV file...',
@@ -331,6 +332,8 @@ export const en = {
     articulatorySoundSynthesized: 'Articulatory Sound synthesized',
     textGridCreated: 'TextGrid created',
     textGridLoaded: 'TextGrid loaded from file',
+    textGridSaved: 'TextGrid saved successfully',
+    folderMounted: 'Mounted local folder to /workspace',
     drawnToPicture: 'Drawn to Praat Picture',
     pictureExported: 'Praat Picture exported',
     workspaceSaved: 'Workspace saved to OPFS',
@@ -399,6 +402,13 @@ export const en = {
     scriptLoadSuccess: 'Praat script loaded successfully:',
     scriptLoadError: 'Failed to load Praat script',
     closeTab: 'Close Script',
+    scriptFormTitle: 'Praat Script Form',
+    mountFolder: 'Mount folder...',
+    mountedFolder: 'Mounted folder',
+    useMountedFolder: 'Use mounted folder',
+    scriptPaused: 'Script paused',
+    scriptResumed: 'Script resumed',
+    scriptAborted: 'Script aborted by user',
   },
 
   // TextGrid Editor Menu Bar & Operations (Phase 8)

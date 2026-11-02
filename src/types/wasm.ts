@@ -4,6 +4,42 @@
 
 import type { TextGridData } from './praat';
 
+export interface ScriptFormParameter {
+  name: string;
+  varName: string;
+  type: string;
+  defaultValue: string;
+  options?: string[];
+}
+
+export interface ScriptFormInfo {
+  hasForm: boolean;
+  title: string;
+  parameters: ScriptFormParameter[];
+}
+
+export interface ScriptPauseData {
+  title: string;
+  defaultButton: number;
+  cancelButton: number;
+  buttons: string[];
+  comments: string[];
+}
+
+export interface ScriptExecutionResult {
+  status: 'COMPLETED' | 'PAUSED' | 'ERROR';
+  info?: string;
+  error?: string;
+  pauseData?: ScriptPauseData;
+}
+
+export interface EditorOpenEvent {
+  action: 'open';
+  editor: 'TextGridEditor' | 'SoundEditor';
+  soundId?: number;
+  textGridId?: number;
+}
+
 export interface SoundInfo {
   id: number;
   name: string;
@@ -249,6 +285,14 @@ export interface PraatWorkerApi {
   
   // Scripting
   executeScript(scriptText: string): Promise<string>;
+  parseScriptForm(scriptText: string): Promise<ScriptFormInfo>;
+  executeScriptWithArgs(scriptText: string, argsJson?: string): Promise<ScriptExecutionResult>;
+  resumeScript(clickedButton: number, argsJson?: string): Promise<ScriptExecutionResult>;
+  abortScript(): Promise<boolean>;
+  getLastEditorEvent(): Promise<EditorOpenEvent | null>;
+  setCurrentDirectory(path: string): Promise<boolean>;
+  writeVfsFile(path: string, content: string | Uint8Array): Promise<boolean>;
+  mountFiles(baseDir: string, files: Array<{ path: string; data: Uint8Array }>): Promise<{ mountedCount: number }>;
   getInfoOutput(): Promise<string>;
   clearInfoOutput(): Promise<void>;
   getObjectsJson(): Promise<Array<{ id: number; className: string; name: string; duration?: number; sampleRate?: number; numChannels?: number; numSamples?: number }>>;

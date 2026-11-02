@@ -18,6 +18,8 @@
 
 #include "UiPause.h"
 #include "praatP.h"
+#include <string>
+#include <sstream>
 
 static autoUiForm thePauseForm;
 static int thePauseForm_clicked = 0;
@@ -303,7 +305,8 @@ int UiPause_end (int numberOfContinueButtons, int defaultContinueButton, int can
 	if (interpreter -> isInSecondPass) {
 		Melder_assert (interpreter == thePauseForm_interpreterReference);
 		Melder_assert (! thePauseForm);
-		interpreter -> isInSecondPass = false;   // TODO: needed?
+		interpreter -> isInSecondPass = false;
+		thePauseForm_interpreterReference = nullptr;
 		return thePauseForm_clicked;
 	} else {
 		if (! thePauseForm)
@@ -376,6 +379,121 @@ void UiPause_cleanUp () {
 	//thePauseForm_secondPass = false;   // TODO: probably remove
 	MelderFolder_setToNull (& thePauseForm_savedFolder);   // TODO: probably remove
 	thePauseForm_savedEditorReference = nullptr;
+}
+
+bool UiPause_isPaused () {
+	return thePauseForm_interpreterReference != nullptr && thePauseForm_interpreterReference->isHalted;
+}
+
+static std::string s_pauseJson;
+
+const char* UiPause_getPauseDataJson () {
+	if (!thePauseForm) {
+		s_pauseJson = "{\"hasPause\":false}";
+		return s_pauseJson.c_str();
+	}
+
+	std::ostringstream oss;
+	oss << "{\"hasPause\":true";
+	const char32* name = Thing_getName(thePauseForm.get());
+	oss << ",\"title\":\"";
+	if (name) {
+		std::string n8 = Melder_peek32to8(name);
+		if (n8.rfind("Pause: ", 0) == 0) {
+			n8 = n8.substr(7);
+		}
+		for (char c : n8) {
+			if (c == '"') oss << "\\\"";
+			else if (c == '\\') oss << "\\\\";
+			else if (c == '\n') oss << "\\n";
+			else if (c == '\r') oss << "\\r";
+			else if (c == '\t') oss << "\\t";
+			else oss << c;
+		}
+	} else {
+		oss << "Pause";
+	}
+	oss << "\"";
+	oss << ",\"defaultButton\":" << thePauseForm->defaultContinueButton;
+	oss << ",\"cancelButton\":" << thePauseForm->cancelContinueButton;
+	oss << ",\"buttons\":[";
+	for (int i = 1; i <= thePauseForm->numberOfContinueButtons; ++i) {
+		if (i > 1) oss << ",";
+		const char32* bText = thePauseForm->continueTexts[i].get();
+		std::string b8 = bText ? Melder_peek32to8(bText) : "";
+		oss << "\"";
+		for (char c : b8) {
+			if (c == '"') oss << "\\\"";
+			else if (c == '\\') oss << "\\\\";
+			else if (c == '\n') oss << "\\n";
+			else if (c == '\r') oss << "\\r";
+			else if (c == '\t') oss << "\\t";
+			else oss << c;
+		}
+		oss << "\"";
+	}
+	oss << "],\"comments\":[";
+	bool firstComment = true;
+	for (int i = 1; i <= thePauseForm->numberOfFields; ++i) {
+		UiField f = thePauseForm->field[i].get();
+		if (!f) continue;
+		if (f->type == _kUiField_type::COMMENT_ || f->type == _kUiField_type::HEADING_ || f->type == _kUiField_type::CAPTION_) {
+			if (!firstComment) oss << ",";
+			firstComment = false;
+			const char32* cText = f->stringValue ? f->stringValue.get() : U"";
+			std::string c8 = Melder_peek32to8(cText);
+			oss << "\"";
+			for (char c : c8) {
+				if (c == '"') oss << "\\\"";
+				else if (c == '\\') oss << "\\\\";
+				else if (c == '\n') oss << "\\n";
+				else if (c == '\r') oss << "\\r";
+				else if (c == '\t') oss << "\\t";
+				else oss << c;
+			}
+			oss << "\"";
+		}
+	}
+	oss << "]}";
+	s_pauseJson = oss.str();
+	return s_pauseJson.c_str();
+}
+
+int UiPause_resume (int clickedButton, const char* jsonVariables) {
+	(void)jsonVariables;
+	if (!thePauseForm_interpreterReference) return 0;
+	thePauseForm_clicked = clickedButton;
+	thePauseForm.reset();
+	Interpreter interpreter = thePauseForm_interpreterReference;
+	if (!interpreter || !interpreter->owningInterpreterStack) {
+		thePauseForm_interpreterReference = nullptr;
+		return 0;
+	}
+	try {
+		autoPraatBackground background;
+		interpreter->owningInterpreterStack->resumeFromTop();
+		return 1;
+	} catch (MelderError) {
+		Melder_clearError();
+		thePauseForm_interpreterReference = nullptr;
+		return 0;
+	} catch (...) {
+		thePauseForm_interpreterReference = nullptr;
+		return 0;
+	}
+}
+
+void UiPause_abort () {
+	if (thePauseForm_interpreterReference) {
+		Interpreter interpreter = thePauseForm_interpreterReference;
+		thePauseForm_interpreterReference = nullptr;
+		thePauseForm.reset();
+		Interpreter_stop(interpreter);
+		if (interpreter->owningInterpreterStack) {
+			interpreter->owningInterpreterStack->emptyAll();
+		}
+	}
+	UiPause_cleanUp();
 }
 
 /* End of file UiPause.cpp */

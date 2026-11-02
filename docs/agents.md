@@ -121,6 +121,28 @@ Agents should work strictly in the following sequence. Do not jump ahead until e
    - Add all menu, dialog, and action strings to `en.ts` and `ko.ts` maintaining 100% key parity.
 7. *Acceptance Check:* User can select an audio time range, click `Interval > New interval on tier...` (or press `Enter` / click the cursor circle) to create new intervals, add/remove/rename tiers, and export the resulting `.TextGrid` file with identical structure in desktop Praat.
 
+### Phase 9: Interactive Scripting, Form/Pause Dialogs & Local Directory Mounting
+1. **Script `form ... endform` Parser & Dynamic Input Modal:**
+   - Implement C bridge `praat_bridge_parse_script_form()` invoking `Interpreter_readParameters` to extract form title, comments, and typed parameter definitions (`word`, `sentence`, `text`, `infile`, `outfile`, `folder`, `real`, `positive`, `integer`, `natural`, `boolean`, `choice`/`optionmenu`).
+   - Build a dynamic React `ScriptFormModal` (`src/components/ScriptConsole/`) that prompts the user before script execution (including folder/file picker triggers for `folder`/`infile` fields) and injects submitted values into the `Interpreter` (`Interpreter_getArgumentsFromString` / `parameterToVariable`) so lowercase form variables (e.g., `wav_folder$`, `skip_done`) bind identically to desktop Praat.
+2. **Local Directory Access & Virtual Filesystem Mounting (`FS` + File System Access API):**
+   - Add a **Mount Local Folder...** workflow in `ScriptConsole` and `MenuBar` using the browser File System Access API (`window.showDirectoryPicker({ mode: 'readwrite' })`), with `<input type="file" webkitdirectory>` read-only fallback for non-Chromium browsers.
+   - Mirror granted directory trees into Emscripten's virtual filesystem (`Module.FS`, e.g., `/workspace/<folderName>`) and set the Praat current/script working directory (`Melder_setCurrentFolder` / `defaultDirectory$`) so `Create Strings as file list`, `fileReadable()`, and `Read from file` resolve relative and mounted paths natively.
+   - Implement two-way write-back so saving an edited `.TextGrid` (`Ctrl/Cmd+S` or `File > Save TextGrid`) updates both `Module.FS` (immediately visible to subsequent script iterations) and the underlying host OS file via `FileSystemFileHandle.createWritable()`.
+3. **Headless Praat Command & File-Recognizer Registration (`wasm/bridge/`):**
+   - Register headless-safe `fon` script commands and file recognizers during `praat_bridge_init()`: `Data_recognizeFileType(soundFileRecognizer)` (so `Read from file:` loads `.wav`/`.flac`/`.mp3`/`.aiff`), `Create Strings as file list...` / `Create Strings as folder list...`, and `TextGrid` / `Sound` query and modification actions (`Get number of tiers`, `Get number of intervals...`, `Get label of interval...`, etc.).
+   - Unify `theCurrentPraatObjects` with `praat_bridge`'s object registry so objects created or removed inside Praat scripts (`Read from file:`, `selectObject:`, `Remove`) stay synchronized with integer IDs used by the Objects list and editors.
+4. **Script-Triggered Editor Actions (`Edit` / `View & Edit`) & Quick Save:**
+   - Register headless action handlers for `Edit` / `View & Edit` on `Sound`, `TextGrid`, and `Sound + TextGrid` selections that emit structured editor-open events from the worker to the UI, automatically opening `SoundEditor` or `TextGridEditor` with the selected objects.
+   - Bind `Ctrl/Cmd+S` in `TextGridEditor` to save the active `TextGrid` directly back to its mounted VFS + host OS path (with toast/status confirmation).
+5. **Non-Blocking `beginPause` / `endPause` & `pause` Coroutine Execution:**
+   - Hook `UiPause_begin` / `UiPause_end` (`UiPause.cpp`) and `pauseScript` (`praat_script.cpp`) into Praat's `InterpreterStack::haltAll()` and `resumeFromTop()` suspension mechanism instead of failing or returning `0` in batch mode.
+   - Return a `"PAUSED"` state with pause form metadata (title, comments, input fields, button labels, default/cancel indices) from the Web Worker so the worker thread stays unblocked for audio playback, spectrogram rendering, and TextGrid editing while paused.
+   - Render a floating, non-modal **Script Pause Window** over the workspace (e.g., `[Stop]` / `[Next]`) and resume or abort execution via `praat_bridge_resume_script()` / `praat_bridge_abort_script()`.
+6. **Localization & Testing:**
+   - Add all script form, pause window, and directory mounting strings to `en.ts` and `ko.ts` with 100% key parity, plus unit/integration tests covering `form` variable binding, VFS directory mounting, `Edit` dispatch, and `beginPause`/`endPause` loop resumption.
+7. *Acceptance Check:* User can mount a local folder containing `.wav` files and a `textgrids/` subfolder, run an interactive batch-annotation script (such as `00_open_for_transcription.praat`), submit the initial `form` dialog, annotate each automatically opened `Sound + TextGrid` pair in `TextGridEditor`, save in place with `Ctrl/Cmd+S`, step through files via the floating `[Next]` / `[Stop]` pause window, and re-run with `skip_done` accurately skipping already-labeled TextGrids.
+
 ---
 
 ## 3. Build Instructions

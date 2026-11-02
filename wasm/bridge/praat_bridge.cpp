@@ -46,6 +46,11 @@
 #include "Articulation.h"
 #include "Artword.h"
 #include "Artword_Speaker_to_Sound.h"
+#include "praatM.h"
+#include "Strings_.h"
+#include "UiPause.h"
+#include "praat_TimeFunction.h"
+#include <sys/stat.h>
 
 // Object table store
 static std::unordered_map<int, autoThing> g_objectTable;
@@ -57,6 +62,23 @@ static int allocate_id() {
         return (int)(++ theCurrentPraatObjects -> sequentialUniqueIdOfLatestObjectInList);
     }
     return g_nextId++;
+}
+
+static int register_new_object(autoDaata obj, const char* name) {
+    if (!obj) return 0;
+    if (name && name[0] != '\0') {
+        Thing_setName(obj.get(), Melder_8to32_e(name).get());
+    }
+    if (theCurrentPraatObjects) {
+        autostring32 name32 = Melder_8to32_e(name && name[0] ? name : "untitled");
+        praat_newWithFile(obj.move(), nullptr, name32.get());
+        praat_updateSelection();
+        return (int)theCurrentPraatObjects->sequentialUniqueIdOfLatestObjectInList;
+    } else {
+        int id = allocate_id();
+        g_objectTable[id] = obj.move();
+        return id;
+    }
 }
 
 static void s_webPraatInfoProc(conststring32 message) {
@@ -80,6 +102,281 @@ static Thing get_object(int id) {
     return nullptr;
 }
 
+// Phase 9 Editor Events & Headless Commands
+static std::string g_lastEditorEvent;
+static autoInterpreterStack s_activeInterpreterStack;
+
+static autoDaata s_soundFileRecognizer(integer nread, const char *header, MelderFile file) {
+    if (nread < 16) return autoDaata();
+    if (strnequ(header, "FORM", 4) && strnequ(header + 8, "AIF", 3)) return Sound_readFromSoundFile(file);
+    if (strnequ(header, "RIFF", 4) && (strnequ(header + 8, "WAVE", 4) || strnequ(header + 8, "CDDA", 4))) return Sound_readFromSoundFile(file);
+    if (strnequ(header, ".snd", 4)) return Sound_readFromSoundFile(file);
+    if (strnequ(header, "NIST_1A", 7)) return Sound_readFromSoundFile(file);
+    if (strnequ(header, "fLaC", 4)) return Sound_readFromSoundFile(file);
+    if (Melder_endsWith_caseAware(MelderFile_name(file), U".mp3")) return Sound_readFromSoundFile(file);
+    return autoDaata();
+}
+
+static void WEB_DO_Sound_TextGrid_edit (UiForm, integer, Stackel, conststring32, Interpreter, conststring32, bool, void *, Editor) {
+    int soundId = 0, tgId = 0;
+    if (theCurrentPraatObjects) {
+        for (integer i = 1; i <= theCurrentPraatObjects->n; ++i) {
+            if (theCurrentPraatObjects->list[i].isSelected && theCurrentPraatObjects->list[i].object) {
+                Thing obj = theCurrentPraatObjects->list[i].object;
+                if (Thing_isa(obj, classSound) && soundId == 0) {
+                    soundId = theCurrentPraatObjects->list[i].id;
+                } else if (Thing_isa(obj, classTextGrid) && tgId == 0) {
+                    tgId = theCurrentPraatObjects->list[i].id;
+                }
+            }
+        }
+    }
+    std::ostringstream oss;
+    oss << "{\"action\":\"open\",\"editor\":\"TextGridEditor\",\"soundId\":" << soundId << ",\"textGridId\":" << tgId << "}";
+    g_lastEditorEvent = oss.str();
+}
+
+static void WEB_DO_Sound_edit (UiForm, integer, Stackel, conststring32, Interpreter, conststring32, bool, void *, Editor) {
+    int soundId = 0;
+    if (theCurrentPraatObjects) {
+        for (integer i = 1; i <= theCurrentPraatObjects->n; ++i) {
+            if (theCurrentPraatObjects->list[i].isSelected && theCurrentPraatObjects->list[i].object) {
+                if (Thing_isa(theCurrentPraatObjects->list[i].object, classSound)) {
+                    soundId = theCurrentPraatObjects->list[i].id;
+                    break;
+                }
+            }
+        }
+    }
+    std::ostringstream oss;
+    oss << "{\"action\":\"open\",\"editor\":\"SoundEditor\",\"soundId\":" << soundId << "}";
+    g_lastEditorEvent = oss.str();
+}
+
+static void WEB_DO_TextGrid_edit (UiForm, integer, Stackel, conststring32, Interpreter, conststring32, bool, void *, Editor) {
+    int tgId = 0;
+    if (theCurrentPraatObjects) {
+        for (integer i = 1; i <= theCurrentPraatObjects->n; ++i) {
+            if (theCurrentPraatObjects->list[i].isSelected && theCurrentPraatObjects->list[i].object) {
+                if (Thing_isa(theCurrentPraatObjects->list[i].object, classTextGrid)) {
+                    tgId = theCurrentPraatObjects->list[i].id;
+                    break;
+                }
+            }
+        }
+    }
+    std::ostringstream oss;
+    oss << "{\"action\":\"open\",\"editor\":\"TextGridEditor\",\"textGridId\":" << tgId << "}";
+    g_lastEditorEvent = oss.str();
+}
+
+FORM (NEW1_Strings_createAsFileList, U"Create Strings as file list", U"Create Strings as file list...") {
+    SENTENCE (name, U"Name", U"fileList")
+    FOLDER (path, U"File path", U"*.wav")
+    OK
+DO
+    CREATE_ONE
+        autoStrings result = Strings_createAsFileList (path);
+    CREATE_ONE_END (name)
+}
+
+FORM (NEW1_Strings_createAsFolderList, U"Create Strings as folder list", U"Create Strings as folder list...") {
+    SENTENCE (name, U"Name", U"folderList")
+    FOLDER (path, U"Folder path", U"*")
+    OK
+DO
+    CREATE_ONE
+        autoStrings result = Strings_createAsFolderList (path);
+    CREATE_ONE_END (name)
+}
+
+DIRECT (INTEGER_Strings_getNumberOfStrings) {
+    QUERY_ONE_FOR_REAL (Strings)
+        const integer result = my numberOfStrings;
+    QUERY_ONE_FOR_REAL_END (U" strings")
+}
+
+FORM (STRING_Strings_getString, U"Get string", nullptr) {
+    NATURAL (position, U"Position", U"1")
+    OK
+DO
+    QUERY_ONE_FOR_STRING (Strings)
+        const conststring32 result = position > my numberOfStrings ? U"" : my strings [position].get();
+    QUERY_ONE_FOR_STRING_END
+}
+
+DIRECT (INTEGER_TextGrid_getNumberOfTiers) {
+    QUERY_ONE_FOR_REAL (TextGrid)
+        integer result = my tiers->size;
+    QUERY_ONE_FOR_REAL_END (U" tiers")
+}
+
+FORM (STRING_TextGrid_getTierName, U"TextGrid: Get tier name", nullptr) {
+    NATURAL (tierNumber, U"Tier number", U"1")
+    OK
+DO
+    QUERY_ONE_FOR_STRING (TextGrid)
+        if (tierNumber > my tiers->size) Melder_throw (U"Tier number too large.");
+        Function tier = my tiers->at [tierNumber];
+        conststring32 result = tier -> name.get();
+    QUERY_ONE_FOR_STRING_END
+}
+
+FORM (BOOLEAN_TextGrid_isIntervalTier, U"TextGrid: Is interval tier?", nullptr) {
+    NATURAL (tierNumber, U"Tier number", U"1")
+    OK
+DO
+    QUERY_ONE_FOR_REAL (TextGrid)
+        if (tierNumber > my tiers->size) Melder_throw (U"Tier number too large.");
+        Function tier = my tiers->at [tierNumber];
+        integer result = ( tier -> classInfo == classIntervalTier );
+    QUERY_ONE_FOR_REAL_END (result ? U" (yes)" : U" (no)")
+}
+
+FORM (INTEGER_TextGrid_getNumberOfIntervals, U"TextGrid: Get number of intervals", nullptr) {
+    NATURAL (tierNumber, U"Tier number", U"1")
+    OK
+DO
+    QUERY_ONE_FOR_REAL (TextGrid)
+        if (tierNumber > my tiers->size) Melder_throw (U"Tier number too large.");
+        Function tier = my tiers->at [tierNumber];
+        if (tier -> classInfo != classIntervalTier) Melder_throw (U"Not an interval tier.");
+        IntervalTier intervalTier = (IntervalTier) tier;
+        integer result = intervalTier -> intervals.size;
+    QUERY_ONE_FOR_REAL_END (U" intervals")
+}
+
+FORM (STRING_TextGrid_getLabelOfInterval, U"TextGrid: Get label of interval", nullptr) {
+    NATURAL (tierNumber, U"Tier number", U"1")
+    NATURAL (intervalNumber, U"Interval number", U"1")
+    OK
+DO
+    QUERY_ONE_FOR_STRING (TextGrid)
+        if (tierNumber > my tiers->size) Melder_throw (U"Tier number too large.");
+        Function tier = my tiers->at [tierNumber];
+        if (tier -> classInfo != classIntervalTier) Melder_throw (U"Not an interval tier.");
+        IntervalTier intervalTier = (IntervalTier) tier;
+        if (intervalNumber > intervalTier -> intervals.size) Melder_throw (U"Interval number too large.");
+        TextInterval interval = intervalTier -> intervals.at [intervalNumber];
+        conststring32 result = interval -> text.get();
+    QUERY_ONE_FOR_STRING_END
+}
+
+FORM (REAL_TextGrid_getStartTimeOfInterval, U"TextGrid: Get start time of interval", nullptr) {
+    NATURAL (tierNumber, U"Tier number", U"1")
+    NATURAL (intervalNumber, U"Interval number", U"1")
+    OK
+DO
+    QUERY_ONE_FOR_REAL (TextGrid)
+        if (tierNumber > my tiers->size) Melder_throw (U"Tier number too large.");
+        Function tier = my tiers->at [tierNumber];
+        if (tier -> classInfo != classIntervalTier) Melder_throw (U"Not an interval tier.");
+        IntervalTier intervalTier = (IntervalTier) tier;
+        if (intervalNumber > intervalTier -> intervals.size) Melder_throw (U"Interval number too large.");
+        TextInterval interval = intervalTier -> intervals.at [intervalNumber];
+        double result = interval -> xmin;
+    QUERY_ONE_FOR_REAL_END (U" seconds")
+}
+
+FORM (REAL_TextGrid_getEndTimeOfInterval, U"TextGrid: Get end time of interval", nullptr) {
+    NATURAL (tierNumber, U"Tier number", U"1")
+    NATURAL (intervalNumber, U"Interval number", U"1")
+    OK
+DO
+    QUERY_ONE_FOR_REAL (TextGrid)
+        if (tierNumber > my tiers->size) Melder_throw (U"Tier number too large.");
+        Function tier = my tiers->at [tierNumber];
+        if (tier -> classInfo != classIntervalTier) Melder_throw (U"Not an interval tier.");
+        IntervalTier intervalTier = (IntervalTier) tier;
+        if (intervalNumber > intervalTier -> intervals.size) Melder_throw (U"Interval number too large.");
+        TextInterval interval = intervalTier -> intervals.at [intervalNumber];
+        double result = interval -> xmax;
+    QUERY_ONE_FOR_REAL_END (U" seconds")
+}
+
+FORM (INTEGER_TextGrid_getIntervalAtTime, U"TextGrid: Get interval at time", nullptr) {
+    NATURAL (tierNumber, U"Tier number", U"1")
+    REAL (time, U"Time (s)", U"0.5")
+    OK
+DO
+    QUERY_ONE_FOR_REAL (TextGrid)
+        if (tierNumber > my tiers->size) Melder_throw (U"Tier number too large.");
+        Function tier = my tiers->at [tierNumber];
+        if (tier -> classInfo != classIntervalTier) Melder_throw (U"Not an interval tier.");
+        IntervalTier intervalTier = (IntervalTier) tier;
+        integer result = IntervalTier_timeToLowIndex (intervalTier, time);
+    QUERY_ONE_FOR_REAL_END (U" (interval at ", time, U" seconds)")
+}
+
+FORM (MODIFY_TextGrid_setIntervalText, U"TextGrid: Set interval text", nullptr) {
+    NATURAL (tierNumber, U"Tier number", U"1")
+    NATURAL (intervalNumber, U"Interval number", U"1")
+    TEXTFIELD (text, U"Text", U"", 10)
+    OK
+DO
+    MODIFY_EACH (TextGrid)
+        TextGrid_setIntervalText (me, tierNumber, intervalNumber, text);
+    MODIFY_EACH_END
+}
+
+FORM (MODIFY_TextGrid_insertIntervalTier, U"TextGrid: Insert interval tier", nullptr) {
+    NATURAL (position, U"Position", U"1 (= at top)")
+    WORD (name, U"Name", U"")
+    OK
+DO
+    MODIFY_EACH (TextGrid)
+        autoIntervalTier tier = IntervalTier_create (my xmin, my xmax);
+        Melder_clipRight (& position, my tiers->size + 1);
+        Thing_setName (tier.get(), name);
+        my tiers -> addItemAtPosition_move (tier.move(), position);
+    MODIFY_EACH_END
+}
+
+FORM (MODIFY_TextGrid_insertPointTier, U"TextGrid: Insert point tier", nullptr) {
+    NATURAL (position, U"Position", U"1 (= at top)")
+    WORD (name, U"Name", U"")
+    OK
+DO
+    MODIFY_EACH (TextGrid)
+        autoTextTier tier = TextTier_create (my xmin, my xmax);
+        Melder_clipRight (& position, my tiers->size + 1);
+        Thing_setName (tier.get(), name);
+        my tiers -> addItemAtPosition_move (tier.move(), position);
+    MODIFY_EACH_END
+}
+
+FORM (MODIFY_TextGrid_removeTier, U"TextGrid: Remove tier", nullptr) {
+    NATURAL (tierNumber, U"Tier number", U"1")
+    OK
+DO
+    MODIFY_EACH (TextGrid)
+        if (my tiers->size <= 1)
+            Melder_throw (U"Sorry, I refuse to remove the last tier.");
+        Melder_clipRight (& tierNumber, my tiers->size);
+        my tiers -> removeItem (tierNumber);
+    MODIFY_EACH_END
+}
+
+FORM (MODIFY_TextGrid_insertBoundary, U"TextGrid: Insert boundary", nullptr) {
+    NATURAL (tierNumber, U"Tier number", U"1")
+    REAL (time, U"Time (s)", U"0.5")
+    OK
+DO
+    MODIFY_EACH (TextGrid)
+        TextGrid_insertBoundary (me, tierNumber, time);
+    MODIFY_EACH_END
+}
+
+FORM (MODIFY_TextGrid_removeBoundaryAtTime, U"TextGrid: Remove boundary at time", nullptr) {
+    NATURAL (tierNumber, U"Tier number", U"1")
+    REAL (time, U"Time (s)", U"0.5")
+    OK
+DO
+    MODIFY_EACH (TextGrid)
+        TextGrid_removeBoundaryAtTime (me, tierNumber, time);
+    MODIFY_EACH_END
+}
+
 extern "C" {
 
 int praat_bridge_init(void) {
@@ -101,6 +398,7 @@ int praat_bridge_init(void) {
             classTextTier,
             classTextInterval,
             classTextPoint,
+            classStrings,
             classMatrix,
             classSpectrum,
             classPointProcess,
@@ -125,6 +423,40 @@ int praat_bridge_init(void) {
             classArtword,
             classArt
         );
+
+        // Register sound file recognizer for WAV/AIFF/FLAC/MP3
+        Data_recognizeFileType(s_soundFileRecognizer);
+
+        // Register Strings commands
+        praat_addMenuCommand (U"Objects", U"New", U"Create Strings as file list...", nullptr, 1, NEW1_Strings_createAsFileList);
+        praat_addMenuCommand (U"Objects", U"New", U"Create Strings as folder list...", nullptr, 1, NEW1_Strings_createAsFolderList);
+        praat_addAction1 (classStrings, 1, U"Get number of strings", nullptr, 1, INTEGER_Strings_getNumberOfStrings);
+        praat_addAction1 (classStrings, 1, U"Get string...", nullptr, 1, STRING_Strings_getString);
+
+        // Register TextGrid query & modification actions
+        praat_addAction1 (classTextGrid, 1, U"Get number of tiers", nullptr, 1, INTEGER_TextGrid_getNumberOfTiers);
+        praat_addAction1 (classTextGrid, 1, U"Get tier name...", nullptr, 1, STRING_TextGrid_getTierName);
+        praat_addAction1 (classTextGrid, 1, U"Is interval tier...", nullptr, 1, BOOLEAN_TextGrid_isIntervalTier);
+        praat_addAction1 (classTextGrid, 1, U"Get number of intervals...", nullptr, 1, INTEGER_TextGrid_getNumberOfIntervals);
+        praat_addAction1 (classTextGrid, 1, U"Get start time of interval... || Get starting point... || Get start point...", nullptr, 1, REAL_TextGrid_getStartTimeOfInterval);
+        praat_addAction1 (classTextGrid, 1, U"Get end time of interval... || Get end point...", nullptr, 1, REAL_TextGrid_getEndTimeOfInterval);
+        praat_addAction1 (classTextGrid, 1, U"Get label of interval...", nullptr, 1, STRING_TextGrid_getLabelOfInterval);
+        praat_addAction1 (classTextGrid, 1, U"Get interval at time...", nullptr, 1, INTEGER_TextGrid_getIntervalAtTime);
+        praat_addAction1 (classTextGrid, 0, U"Set interval text...", nullptr, 1, MODIFY_TextGrid_setIntervalText);
+        praat_addAction1 (classTextGrid, 0, U"Insert interval tier...", nullptr, 1, MODIFY_TextGrid_insertIntervalTier);
+        praat_addAction1 (classTextGrid, 0, U"Insert point tier...", nullptr, 1, MODIFY_TextGrid_insertPointTier);
+        praat_addAction1 (classTextGrid, 0, U"Remove tier...", nullptr, 1, MODIFY_TextGrid_removeTier);
+        praat_addAction1 (classTextGrid, 0, U"Insert boundary...", nullptr, 1, MODIFY_TextGrid_insertBoundary);
+        praat_addAction1 (classTextGrid, 0, U"Remove boundary at time...", nullptr, 1, MODIFY_TextGrid_removeBoundaryAtTime);
+
+        // Register Sound & TextGrid time queries (duration, start, end)
+        praat_TimeFunction_query_init (classSound);
+        praat_TimeFunction_query_init (classTextGrid);
+
+        // Register Edit / View & Edit actions
+        praat_addAction2 (classSound, 1, classTextGrid, 1, U"View & Edit || Edit", nullptr, GuiMenu_ATTRACTIVE, WEB_DO_Sound_TextGrid_edit);
+        praat_addAction1 (classSound, 1, U"View & Edit || Edit || Open", nullptr, GuiMenu_ATTRACTIVE, WEB_DO_Sound_edit);
+        praat_addAction1 (classTextGrid, 1, U"View & Edit alone || View & Edit || Edit", nullptr, 0, WEB_DO_TextGrid_edit);
 
         s_initialized = true;
         return 1;
@@ -155,9 +487,7 @@ int praat_bridge_create_sound(const double* samples, int n, int channels, double
             }
         }
 
-        int id = allocate_id();
-        g_objectTable[id] = sound.move();
-        return id;
+        return register_new_object(sound.move(), name && name[0] ? name : "sound");
     } catch (MelderError) {
         Melder_clearError();
         return 0;
@@ -184,15 +514,7 @@ int praat_bridge_sound_read_from_memory(const unsigned char* buffer, int length,
 
         if (!sound) return 0;
 
-        if (name && name[0] != '\0') {
-            Thing_setName(sound.get(), Melder_peek8to32_u(name));
-        } else {
-            Thing_setName(sound.get(), U"sound");
-        }
-
-        int id = allocate_id();
-        g_objectTable[id] = sound.move();
-        return id;
+        return register_new_object(sound.move(), name && name[0] ? name : "sound");
     } catch (MelderError) {
         Melder_clearError();
         return 0;
@@ -279,13 +601,7 @@ int praat_bridge_object_read_from_file(const char* path, const char* name) {
         autoDaata obj = Data_readFromFile(&file);
         if (!obj) return 0;
 
-        if (name && name[0] != '\0') {
-            Thing_setName(obj.get(), Melder_8to32_e(name).get());
-        }
-
-        int id = allocate_id();
-        g_objectTable[id] = obj.move();
-        return id;
+        return register_new_object(obj.move(), name && name[0] ? name : "");
     } catch (MelderError) {
         Melder_clearError();
         return 0;
@@ -620,15 +936,7 @@ int praat_bridge_create_textgrid(double tmin, double tmax, const char* tier_name
         autoTextGrid grid = TextGrid_create(tmin, tmax, tierNames32.get(), pointTiers32.get());
         if (!grid) return 0;
 
-        if (name && name[0] != '\0') {
-            Thing_setName(grid.get(), Melder_8to32_e(name).get());
-        } else {
-            Thing_setName(grid.get(), U"grid");
-        }
-
-        int id = allocate_id();
-        g_objectTable[id] = grid.move();
-        return id;
+        return register_new_object(grid.move(), name && name[0] ? name : "grid");
     } catch (MelderError) {
         Melder_clearError();
         return 0;
@@ -646,11 +954,11 @@ int praat_bridge_sound_to_textgrid(int sound_id, const char* tier_names, const c
         autoTextGrid grid = TextGrid_create(sound->xmin, sound->xmax, tierNames32.get(), pointTiers32.get());
         if (!grid) return 0;
 
-        Thing_setName(grid.get(), Melder_cat(Thing_getName(sound), U"_grid"));
+        const char32* soundName = Thing_getName(sound);
+        std::string baseName = soundName ? Melder_peek32to8(soundName) : "sound";
+        baseName += "_grid";
 
-        int id = allocate_id();
-        g_objectTable[id] = grid.move();
-        return id;
+        return register_new_object(grid.move(), baseName.c_str());
     } catch (MelderError) {
         Melder_clearError();
         return 0;
@@ -758,13 +1066,7 @@ int praat_bridge_textgrid_read_from_file(const char* path, const char* name) {
             if (!obj || !Thing_isa(obj.get(), classTextGrid)) return 0;
         }
 
-        if (name && name[0] != '\0') {
-            Thing_setName(obj.get(), Melder_8to32_e(name).get());
-        }
-
-        int id = allocate_id();
-        g_objectTable[id] = obj.move();
-        return id;
+        return register_new_object(obj.move(), name && name[0] ? name : "");
     } catch (MelderError) {
         Melder_clearError();
         return 0;
@@ -971,6 +1273,360 @@ int praat_bridge_textgrid_rename_tier(int textgrid_id, int tier_number, const ch
     }
 }
 
+#define kInterpreter_WORD 1
+#define kInterpreter_SENTENCE 2
+#define kInterpreter_TEXT 3
+#define kInterpreter_INFILE 4
+#define kInterpreter_OUTFILE 5
+#define kInterpreter_FOLDER 6
+#define kInterpreter_REAL 7
+#define kInterpreter_NONNEGATIVE 8
+#define kInterpreter_POSITIVE 9
+#define kInterpreter_INTEGER 10
+#define kInterpreter_NATURAL0 11
+#define kInterpreter_NATURAL1 12
+#define kInterpreter_BOOLEAN 13
+#define kInterpreter_REALVECTOR 14
+#define kInterpreter_NONNEGATIVEVECTOR 15
+#define kInterpreter_POSITIVEVECTOR 16
+#define kInterpreter_INTEGERVECTOR 17
+#define kInterpreter_NATURAL0VECTOR 18
+#define kInterpreter_NATURAL1VECTOR 19
+#define kInterpreter_REALMATRIX 20
+#define kInterpreter_CHOICE 21
+#define kInterpreter_OPTIONMENU 22
+#define kInterpreter_MAXIMUM_TYPE_WITH_VARIABLE_NAME 22
+#define kInterpreter_BUTTON 23
+#define kInterpreter_OPTION 24
+#define kInterpreter_HEADING 25
+#define kInterpreter_COMMENT 26
+#define kInterpreter_CAPTION 27
+
+static std::string s_escapeJson(const std::string& in) {
+    std::string out;
+    out.reserve(in.size() + 16);
+    for (char c : in) {
+        if (c == '"') out += "\\\"";
+        else if (c == '\\') out += "\\\\";
+        else if (c == '\n') out += "\\n";
+        else if (c == '\r') out += "\\r";
+        else if (c == '\t') out += "\\t";
+        else out += c;
+    }
+    return out;
+}
+
+static std::unordered_map<std::string, std::string> s_parseArgsJson(const char* args_json) {
+    std::unordered_map<std::string, std::string> map;
+    if (!args_json || args_json[0] == '\0') return map;
+
+    std::string s = args_json;
+    size_t pos = 0;
+    while (pos < s.length()) {
+        size_t keyStart = s.find('"', pos);
+        if (keyStart == std::string::npos) break;
+        size_t keyEnd = s.find('"', keyStart + 1);
+        if (keyEnd == std::string::npos) break;
+        std::string key = s.substr(keyStart + 1, keyEnd - keyStart - 1);
+
+        size_t colon = s.find(':', keyEnd + 1);
+        if (colon == std::string::npos) break;
+
+        size_t valStart = s.find_first_not_of(" \t\r\n", colon + 1);
+        if (valStart == std::string::npos) break;
+
+        std::string val;
+        if (s[valStart] == '"') {
+            size_t valEnd = s.find('"', valStart + 1);
+            if (valEnd == std::string::npos) break;
+            val = s.substr(valStart + 1, valEnd - valStart - 1);
+            pos = valEnd + 1;
+        } else {
+            size_t valEnd = s.find_first_of(",}", valStart);
+            if (valEnd == std::string::npos) valEnd = s.length();
+            val = s.substr(valStart, valEnd - valStart);
+            size_t trimEnd = val.find_last_not_of(" \t\r\n");
+            if (trimEnd != std::string::npos) val = val.substr(0, trimEnd + 1);
+            pos = valEnd;
+        }
+
+        std::string normKey = key;
+        for (char& c : normKey) c = tolower(c);
+        if (!normKey.empty() && normKey.back() == '$') normKey.pop_back();
+
+        map[normKey] = val;
+        map[key] = val;
+    }
+    return map;
+}
+
+const char* praat_bridge_parse_script_form(const char* script_text) {
+    static std::string s_json;
+    if (!script_text || script_text[0] == '\0') {
+        s_json = "{\"hasForm\":false,\"parameters\":[]}";
+        return s_json.c_str();
+    }
+
+    try {
+        autostring32 script32 = Melder_8to32_e(script_text);
+        autoInterpreterStack stack = InterpreterStack_create(nullptr);
+        autoInterpreter interpreter = Interpreter_createFromEnvironment(stack.get(), nullptr, nullptr);
+
+        integer npar = Interpreter_readParameters(interpreter.get(), script32.get());
+        if (npar == 0 || interpreter->numberOfParameters == 0) {
+            s_json = "{\"hasForm\":false,\"parameters\":[]}";
+            return s_json.c_str();
+        }
+
+        std::ostringstream oss;
+        oss << "{\"hasForm\":true";
+        if (interpreter->dialogTitle && interpreter->dialogTitle[0]) {
+            oss << ",\"title\":\"" << s_escapeJson(Melder_peek32to8(interpreter->dialogTitle.get())) << "\"";
+        } else {
+            oss << ",\"title\":\"\"";
+        }
+        oss << ",\"parameters\":[";
+
+        bool first = true;
+        for (int i = 1; i <= interpreter->numberOfParameters; ++i) {
+            int type = interpreter->types[i];
+            const char32* paramName = interpreter->parameters[i];
+            const char32* argVal = interpreter->arguments[i] ? interpreter->arguments[i].get() : U"";
+
+            std::string nameStr = paramName ? Melder_peek32to8(paramName) : "";
+            std::string valStr = argVal ? Melder_peek32to8(argVal) : "";
+            std::string typeStr;
+            std::string varName;
+
+            if (type <= kInterpreter_MAXIMUM_TYPE_WITH_VARIABLE_NAME && !nameStr.empty()) {
+                varName = nameStr;
+                for (char& c : varName) c = tolower(c);
+                if (!varName.empty() && varName.back() == '$') {
+                    varName.pop_back();
+                }
+            }
+
+            switch (type) {
+                case kInterpreter_WORD: typeStr = "word"; break;
+                case kInterpreter_SENTENCE: typeStr = "sentence"; break;
+                case kInterpreter_TEXT: typeStr = "text"; break;
+                case kInterpreter_INFILE: typeStr = "infile"; break;
+                case kInterpreter_OUTFILE: typeStr = "outfile"; break;
+                case kInterpreter_FOLDER: typeStr = "folder"; break;
+                case kInterpreter_REAL: typeStr = "real"; break;
+                case kInterpreter_NONNEGATIVE: typeStr = "nonnegative"; break;
+                case kInterpreter_POSITIVE: typeStr = "positive"; break;
+                case kInterpreter_INTEGER: typeStr = "integer"; break;
+                case kInterpreter_NATURAL0: typeStr = "natural0"; break;
+                case kInterpreter_NATURAL1: typeStr = "natural"; break;
+                case kInterpreter_BOOLEAN: typeStr = "boolean"; break;
+                case kInterpreter_CHOICE: typeStr = "choice"; break;
+                case kInterpreter_OPTIONMENU: typeStr = "optionmenu"; break;
+                case kInterpreter_BUTTON: typeStr = "button"; break;
+                case kInterpreter_OPTION: typeStr = "option"; break;
+                case kInterpreter_COMMENT: typeStr = "comment"; break;
+                default: typeStr = "unknown"; break;
+            }
+
+            if (!first) oss << ",";
+            first = false;
+
+            oss << "{"
+                << "\"name\":\"" << s_escapeJson(nameStr) << "\""
+                << ",\"varName\":\"" << s_escapeJson(varName) << "\""
+                << ",\"type\":\"" << typeStr << "\""
+                << ",\"defaultValue\":\"" << s_escapeJson(valStr) << "\"";
+
+            if (type == kInterpreter_CHOICE || type == kInterpreter_OPTIONMENU) {
+                oss << ",\"options\":[";
+                bool firstOpt = true;
+                int j = i + 1;
+                while (j <= interpreter->numberOfParameters &&
+                       (interpreter->types[j] == kInterpreter_BUTTON || interpreter->types[j] == kInterpreter_OPTION)) {
+                    if (!firstOpt) oss << ",";
+                    firstOpt = false;
+                    const char32* optVal = interpreter->arguments[j] ? interpreter->arguments[j].get() : U"";
+                    oss << "\"" << s_escapeJson(optVal ? Melder_peek32to8(optVal) : "") << "\"";
+                    j++;
+                }
+                oss << "]";
+            }
+
+            oss << "}";
+        }
+
+        oss << "]}";
+        s_json = oss.str();
+        return s_json.c_str();
+    } catch (MelderError) {
+        Melder_clearError();
+        s_json = "{\"hasForm\":false,\"parameters\":[]}";
+        return s_json.c_str();
+    } catch (...) {
+        s_json = "{\"hasForm\":false,\"parameters\":[]}";
+        return s_json.c_str();
+    }
+}
+
+const char* praat_bridge_execute_script_with_args(const char* script_text, const char* args_json) {
+    static std::string s_resultJson;
+    if (!script_text || script_text[0] == '\0') {
+        s_resultJson = "{\"status\":\"COMPLETED\",\"info\":\"\"}";
+        return s_resultJson.c_str();
+    }
+
+    try {
+        g_infoAccumulator.clear();
+        Melder_clearInfo();
+
+        autostring32 script32 = Melder_8to32_e(script_text);
+        s_activeInterpreterStack = InterpreterStack_create(nullptr);
+        autoInterpreter interpreter = Interpreter_createFromEnvironment(s_activeInterpreterStack.get(), nullptr, nullptr);
+        Melder_getCurrentFolder(&interpreter->workingDirectory);
+
+        integer npar = Interpreter_readParameters(interpreter.get(), script32.get());
+        if (npar > 0 && args_json && args_json[0] != '\0') {
+            auto argsMap = s_parseArgsJson(args_json);
+            for (int ipar = 1; ipar <= interpreter->numberOfParameters; ++ipar) {
+                int type = interpreter->types[ipar];
+                const char32* pName = interpreter->parameters[ipar];
+                if (!pName || !pName[0]) continue;
+                std::string name8 = Melder_peek32to8(pName);
+                std::string normName = name8;
+                for (char& c : normName) c = tolower(c);
+                if (!normName.empty() && normName.back() == '$') normName.pop_back();
+
+                auto it = argsMap.find(normName);
+                if (it != argsMap.end()) {
+                    if (type == kInterpreter_BOOLEAN) {
+                        std::string boolVal = (it->second == "1" || it->second == "true") ? "1" : "0";
+                        interpreter->arguments[ipar] = Melder_8to32_e(boolVal.c_str());
+                    } else {
+                        interpreter->arguments[ipar] = Melder_8to32_e(it->second.c_str());
+                    }
+                }
+            }
+        }
+
+        s_activeInterpreterStack->emptyAll();
+        s_activeInterpreterStack->runDown(interpreter.move(), script32.move(), false);
+
+        conststring32 info32 = Melder_getInfo();
+        std::string infoStr = (info32 && info32[0] != '\0') ? Melder_peek32to8(info32) : g_infoAccumulator;
+
+        if (UiPause_isPaused()) {
+            std::ostringstream oss;
+            oss << "{\"status\":\"PAUSED\",\"pauseData\":" << UiPause_getPauseDataJson()
+                << ",\"info\":\"" << s_escapeJson(infoStr) << "\"}";
+            s_resultJson = oss.str();
+        } else {
+            std::ostringstream oss;
+            oss << "{\"status\":\"COMPLETED\",\"info\":\"" << s_escapeJson(infoStr) << "\"}";
+            s_resultJson = oss.str();
+        }
+    } catch (MelderError) {
+        conststring32 err = Melder_getError();
+        std::string errMsg = err ? Melder_peek32to8(err) : "Script error";
+        Melder_clearError();
+        std::ostringstream oss;
+        oss << "{\"status\":\"ERROR\",\"error\":\"" << s_escapeJson(errMsg) << "\"}";
+        s_resultJson = oss.str();
+    } catch (const std::exception& e) {
+        std::ostringstream oss;
+        oss << "{\"status\":\"ERROR\",\"error\":\"" << s_escapeJson(e.what()) << "\"}";
+        s_resultJson = oss.str();
+    } catch (...) {
+        s_resultJson = "{\"status\":\"ERROR\",\"error\":\"Unknown error during script execution\"}";
+    }
+    return s_resultJson.c_str();
+}
+
+const char* praat_bridge_resume_script(int clicked_button, const char* args_json) {
+    static std::string s_resumeResult;
+    try {
+        g_infoAccumulator.clear();
+        Melder_clearInfo();
+
+        int ok = UiPause_resume(clicked_button, args_json);
+        (void)ok;
+
+        conststring32 info32 = Melder_getInfo();
+        std::string infoStr = (info32 && info32[0] != '\0') ? Melder_peek32to8(info32) : g_infoAccumulator;
+
+        if (UiPause_isPaused()) {
+            std::ostringstream oss;
+            oss << "{\"status\":\"PAUSED\",\"pauseData\":" << UiPause_getPauseDataJson()
+                << ",\"info\":\"" << s_escapeJson(infoStr) << "\"}";
+            s_resumeResult = oss.str();
+        } else {
+            std::ostringstream oss;
+            oss << "{\"status\":\"COMPLETED\",\"info\":\"" << s_escapeJson(infoStr) << "\"}";
+            s_resumeResult = oss.str();
+        }
+    } catch (MelderError) {
+        conststring32 err = Melder_getError();
+        std::string errMsg = err ? Melder_peek32to8(err) : "Error resuming script";
+        Melder_clearError();
+        std::ostringstream oss;
+        oss << "{\"status\":\"ERROR\",\"error\":\"" << s_escapeJson(errMsg) << "\"}";
+        s_resumeResult = oss.str();
+    } catch (const std::exception& e) {
+        std::ostringstream oss;
+        oss << "{\"status\":\"ERROR\",\"error\":\"" << s_escapeJson(e.what()) << "\"}";
+        s_resumeResult = oss.str();
+    } catch (...) {
+        s_resumeResult = "{\"status\":\"ERROR\",\"error\":\"Unknown error resuming script\"}";
+    }
+    return s_resumeResult.c_str();
+}
+
+int praat_bridge_abort_script(void) {
+    UiPause_abort();
+    if (s_activeInterpreterStack) {
+        s_activeInterpreterStack->emptyAll();
+    }
+    return 1;
+}
+
+const char* praat_bridge_get_last_editor_event(void) {
+    static std::string s_event;
+    s_event = g_lastEditorEvent;
+    g_lastEditorEvent.clear();
+    return s_event.c_str();
+}
+
+int praat_bridge_set_current_directory(const char* path) {
+    if (!path || path[0] == '\0') return 0;
+    try {
+        structMelderFolder folder { };
+        Melder_pathToFolder(Melder_peek8to32_u(path), &folder);
+        Melder_setCurrentFolder(&folder);
+        return 1;
+    } catch (...) {
+        return 0;
+    }
+}
+
+int praat_bridge_vfs_write_file(const char* path, const unsigned char* data, int length) {
+    if (!path || !data || length < 0) return 0;
+    std::string sPath = path;
+    size_t lastSlash = sPath.find_last_of('/');
+    if (lastSlash != std::string::npos && lastSlash > 0) {
+        std::string dir = sPath.substr(0, lastSlash);
+        for (size_t i = 1; i <= dir.length(); ++i) {
+            if (i == dir.length() || dir[i] == '/') {
+                std::string sub = dir.substr(0, i);
+                mkdir(sub.c_str(), 0777);
+            }
+        }
+    }
+    FILE* f = fopen(path, "wb");
+    if (!f) return 0;
+    size_t written = fwrite(data, 1, length, f);
+    fclose(f);
+    return written == (size_t)length ? 1 : 0;
+}
+
 const char* praat_bridge_execute_script(const char* script_text) {
     static std::string s_out;
     if (!script_text || script_text[0] == '\0') return "";
@@ -979,7 +1635,15 @@ const char* praat_bridge_execute_script(const char* script_text) {
         g_infoAccumulator.clear();
         Melder_clearInfo();
         autostring32 script32 = Melder_8to32_e(script_text);
-        praat_executeScriptFromText(script32.get());
+
+        s_activeInterpreterStack = InterpreterStack_create(nullptr);
+        autoInterpreter interpreter = Interpreter_createFromEnvironment(s_activeInterpreterStack.get(), nullptr, nullptr);
+        Melder_getCurrentFolder(&interpreter->workingDirectory);
+
+        Interpreter_readParameters(interpreter.get(), script32.get());
+
+        s_activeInterpreterStack->emptyAll();
+        s_activeInterpreterStack->runDown(interpreter.move(), script32.move(), false);
 
         conststring32 info32 = Melder_getInfo();
         std::string infoStr = (info32 && info32[0] != '\0') ? Melder_peek32to8(info32) : "";

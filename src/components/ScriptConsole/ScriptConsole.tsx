@@ -7,18 +7,12 @@ import {
   scriptTextAtom,
   scriptNameAtom,
   scriptRevisionAtom,
-  isScriptRunningAtom,
   infoOutputAtom,
-  objectsAtom,
-  selectedIdsAtom,
   statusMessageAtom,
-  pictureCommandsAtom,
-  pictureViewportAtom,
-  picturePenAtom,
 } from '../../store';
 import { useI18n } from '../../hooks/useI18n';
+import { useScriptExecution } from '../../hooks/useScriptExecution';
 import { getPraatWorker, downloadBlob } from '../../utils/audio';
-import { parsePraatPictureScriptCommands } from '../../utils/pictureRenderer';
 import { praatLanguage } from './praatSyntax';
 
 interface ScriptConsoleProps {
@@ -30,14 +24,10 @@ export const ScriptConsole: React.FC<ScriptConsoleProps> = ({ onClose }) => {
   const [scriptText, setScriptText] = useAtom(scriptTextAtom);
   const [scriptName, setScriptName] = useAtom(scriptNameAtom);
   const [scriptRevision, setScriptRevision] = useAtom(scriptRevisionAtom);
-  const [isScriptRunning, setIsScriptRunning] = useAtom(isScriptRunningAtom);
-  const [, setInfoOutput] = useAtom(infoOutputAtom);
-  const [, setObjects] = useAtom(objectsAtom);
-  const [, setSelectedIds] = useAtom(selectedIdsAtom);
-  const [, setStatusMessage] = useAtom(statusMessageAtom);
-  const [, setPictureCommands] = useAtom(pictureCommandsAtom);
-  const [pictureViewport, setPictureViewport] = useAtom(pictureViewportAtom);
-  const [picturePen, setPicturePen] = useAtom(picturePenAtom);
+  const setInfoOutput = useAtom(infoOutputAtom)[1];
+  const setStatusMessage = useAtom(statusMessageAtom)[1];
+
+  const { runScript, isScriptRunning, mountFolder, mountedDir } = useScriptExecution();
 
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const editorViewRef = useRef<EditorView | null>(null);
@@ -124,86 +114,11 @@ writeInfoLine: "Drew vowel triangle to Praat Picture!"
 `,
   };
 
-  const handleRunScript = async () => {
-    if (isScriptRunning) return;
-    setIsScriptRunning(true);
-    setStatusMessage(t.script.running);
-
-    try {
-      const codeToRun = editorViewRef.current
-        ? editorViewRef.current.state.doc.toString()
-        : scriptText;
-
-      const parsedPic = parsePraatPictureScriptCommands(
-        codeToRun,
-        pictureViewport,
-        picturePen
-      );
-
-      if (parsedPic.hasPictureCommands) {
-        setPictureViewport(parsedPic.finalViewport);
-        setPicturePen(parsedPic.finalPen);
-        setPictureCommands((prev) =>
-          parsedPic.eraseAll ? parsedPic.commands : [...prev, ...parsedPic.commands]
-        );
-      }
-
-      const hasRemainingExecutable = parsedPic.remainingDspScript
-        .split(/\r?\n/)
-        .some((l) => {
-          const trimmed = l.trim();
-          return trimmed.length > 0 && !trimmed.startsWith('#') && !trimmed.startsWith(';');
-        });
-
-      const resetsInfo = /(?:^|\n)\s*(?:clearinfo|writeInfo(?:Line)?\b)/im.test(codeToRun);
-
-      const worker = getPraatWorker();
-      let hadScriptError = false;
-      if (hasRemainingExecutable) {
-        const output = await worker.executeScript(parsedPic.remainingDspScript);
-        if (output && /^Error:/i.test(output.trim())) {
-          hadScriptError = true;
-        }
-        if (resetsInfo && !hadScriptError) {
-          setInfoOutput(output || '');
-        } else if (output) {
-          setInfoOutput((prev) => (prev ? prev + '\n' + output : output));
-        }
-      }
-
-      // Synchronize objects list with WASM state
-      const currentObjects = await worker.getObjectsJson();
-      if (currentObjects) {
-        setObjects((prev) => {
-          const existingMap = new Map(prev.map((o) => [o.id, o]));
-          return currentObjects.map((obj) => {
-            const existing = existingMap.get(obj.id);
-            return {
-              id: obj.id,
-              className: obj.className,
-              name: obj.name,
-              duration: obj.duration ?? existing?.duration,
-              sampleRate: obj.sampleRate ?? existing?.sampleRate,
-              numChannels: obj.numChannels ?? existing?.numChannels,
-              numSamples: obj.numSamples ?? existing?.numSamples,
-              createdAt: existing?.createdAt ?? Date.now(),
-            };
-          });
-        });
-
-        const activeIdSet = new Set(currentObjects.map((o) => o.id));
-        setSelectedIds((prev) => prev.filter((id) => activeIdSet.has(id)));
-      }
-
-      setStatusMessage(hadScriptError ? t.script.scriptError : t.script.scriptCompleted);
-    } catch (err: any) {
-      const errMsg = err?.message || String(err);
-      setInfoOutput((prev) => (prev ? `${prev}\n${errMsg}` : errMsg));
-      setStatusMessage(t.script.scriptError);
-    } finally {
-      setIsScriptRunning(false);
-      setTimeout(() => setStatusMessage(''), 3000);
-    }
+  const handleRunScript = () => {
+    const codeToRun = editorViewRef.current
+      ? editorViewRef.current.state.doc.toString()
+      : scriptText;
+    void runScript(codeToRun);
   };
 
   runScriptRef.current = handleRunScript;
@@ -404,6 +319,20 @@ writeInfoLine: "Drew vowel triangle to Praat Picture!"
           >
             {scriptName || t.script.untitledScript}
           </span>
+
+          <button
+            type="button"
+            onClick={mountFolder}
+            className={`rounded border px-2.5 py-1 text-xs whitespace-nowrap shrink-0 flex items-center space-x-1 ${
+              mountedDir
+                ? 'border-emerald-500 bg-emerald-50 text-emerald-800 font-medium'
+                : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-100'
+            }`}
+            title={mountedDir ? `${t.script.mountedFolder}: ${mountedDir.path}` : t.script.mountFolder}
+          >
+            <span>📁</span>
+            <span>{mountedDir ? mountedDir.name : t.script.mountFolder}</span>
+          </button>
 
           <button
             type="button"

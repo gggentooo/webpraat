@@ -64,6 +64,13 @@ int         praat_bridge_textgrid_rename_tier(int textgrid_id, int tier_number, 
 
 // Scripting & Console output
 const char* praat_bridge_execute_script(const char* script_text);
+const char* praat_bridge_parse_script_form(const char* script_text);
+const char* praat_bridge_execute_script_with_args(const char* script_text, const char* args_json);
+const char* praat_bridge_resume_script(int clicked_button, const char* args_json);
+int         praat_bridge_abort_script(void);
+const char* praat_bridge_get_last_editor_event(void);
+int         praat_bridge_set_current_directory(const char* path);
+int         praat_bridge_vfs_write_file(const char* path, const unsigned char* data, int length);
 const char* praat_bridge_get_info_output(void);
 void        praat_bridge_clear_info_output(void);
 const char* praat_bridge_get_objects_json(void);

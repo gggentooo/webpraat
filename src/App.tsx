@@ -12,13 +12,17 @@ import {
   statusMessageAtom,
   isProcessingAtom,
   workspaceHydratedAtom,
+  scriptFormModalAtom,
 } from './store';
 import { useI18n } from './hooks/useI18n';
+import { useScriptExecution } from './hooks/useScriptExecution';
 import { MenuBar } from './components/MenuBar/MenuBar';
 import { ObjectsPanel } from './components/ObjectsPanel/ObjectsPanel';
 import { InfoWindow } from './components/InfoWindow/InfoWindow';
 import { ModalDialog } from './components/shared/ModalDialog';
 import { SoundRecorderModal } from './components/SoundRecorder/SoundRecorderModal';
+import { ScriptFormModal } from './components/ScriptConsole/ScriptFormModal';
+import { ScriptPauseWindow } from './components/ScriptConsole/ScriptPauseWindow';
 import { SoundEditor } from './components/SoundEditor/SoundEditor';
 import { TextGridEditor } from './components/TextGridEditor/TextGridEditor';
 import { ScriptConsole } from './components/ScriptConsole/ScriptConsole';
@@ -39,6 +43,9 @@ export default function App() {
   const [statusMessage, setStatusMessage] = useAtom(statusMessageAtom);
   const isProcessing = useAtomValue(isProcessingAtom);
   const [hydrated, setHydrated] = useAtom(workspaceHydratedAtom);
+  const [scriptFormModal, setScriptFormModal] = useAtom(scriptFormModalAtom);
+
+  const { runScript, resumeScript, abortScript, scriptPauseState } = useScriptExecution();
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -256,9 +263,31 @@ export default function App() {
         )}
       </div>
 
-      {/* 5. Global Modal Dialogs */}
+      {/* 5. Global Modal Dialogs & Script Windows */}
       <ModalDialog />
       <SoundRecorderModal />
+      {scriptFormModal && (
+        <ScriptFormModal
+          formInfo={scriptFormModal.formInfo}
+          onSubmit={(args) => {
+            const code = scriptFormModal.scriptText;
+            setScriptFormModal(null);
+            void runScript(code, JSON.stringify(args));
+          }}
+          onCancel={() => setScriptFormModal(null)}
+        />
+      )}
+      {scriptPauseState && (
+        <ScriptPauseWindow
+          pauseData={scriptPauseState.data}
+          onResume={(btn) => {
+            void resumeScript(btn);
+          }}
+          onAbort={() => {
+            void abortScript();
+          }}
+        />
+      )}
       </div>
     </div>
   );

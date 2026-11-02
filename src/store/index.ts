@@ -13,7 +13,26 @@ import type {
   PictureViewport,
   PicturePenSettings,
 } from '../types/praat';
+import type { ScriptFormInfo, ScriptPauseData } from '../types/wasm';
 import { defaultLocale, getTranslation, type SupportedLocale } from '../config/i18n';
+
+// Phase 9 Interactive Scripting & Directory Mounting Interfaces
+export interface MountedDirectory {
+  name: string;
+  path: string;
+  handle?: any;
+  readOnly?: boolean;
+}
+
+export interface ScriptFormModalState {
+  formInfo: ScriptFormInfo;
+  scriptText: string;
+}
+
+export interface ScriptPauseState {
+  data: ScriptPauseData;
+  scriptText: string;
+}
 
 // Core State Atoms
 export const objectsAtom = atom<PraatObject[]>([]);
@@ -31,6 +50,11 @@ export const modalAtom = atom<ModalState | null>(null);
 export const isProcessingAtom = atom<boolean>(false);
 export const statusMessageAtom = atom<string>('');
 export const workspaceHydratedAtom = atom<boolean>(false);
+
+// Phase 9 Interactive Scripting & VFS Atoms
+export const mountedDirectoryAtom = atom<MountedDirectory | null>(null);
+export const scriptFormModalAtom = atom<ScriptFormModalState | null>(null);
+export const scriptPauseStateAtom = atom<ScriptPauseState | null>(null);
 
 // Praat Picture Window State Atoms (Phase 7)
 export const pictureCommandsAtom = atom<PictureCommand[]>([]);

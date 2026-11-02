@@ -5,6 +5,42 @@ All notable feature implementations, bug fixes, debuggings, and build/deployment
 ---
 
 ## `HEAD` — 2026-11-02
+**`feat(phase9): implement interactive scripting, form/pause dialogs & local directory mounting`**
+
+- **Feature Implementations**:
+  - **Script `form ... endform` Parser & Parameter Extraction (`praat_bridge_parse_script_form`)**:
+    - Invoked Praat's native `Interpreter_readParameters` in C++ WASM bridge to extract dialog title, comments, and typed parameter definitions (`sentence`, `word`, `text`, `integer`, `real`, `positive`, `natural`, `boolean`, `choice`, `optionmenu`, `folder`, `infile`, `outfile`).
+    - Exposed structured JSON metadata via `praatWorkerApi.parseScriptForm()`.
+  - **Dynamic React `ScriptFormModal` (`src/components/ScriptConsole/ScriptFormModal.tsx`)**:
+    - Prompts user before script execution when forms are present, pre-populating fields with default values.
+    - Added one-click "Use mounted folder" shortcut for `folder` / `infile` / `outfile` parameters when a local directory is mounted.
+    - Injected form arguments into script interpreter via `praat_bridge_execute_script_with_args()`, binding lowercase/uppercase variables (e.g. `wav_folder$`, `skip_done`) with exact desktop Praat parity.
+  - **Local Directory Mounting & Virtual Filesystem (`src/utils/vfs.ts`)**:
+    - Implemented "Mount Local Folder..." using browser File System Access API (`window.showDirectoryPicker({ mode: 'readwrite' })`) with `<input type="file" webkitdirectory>` fallback.
+    - Mirrored directory trees into Emscripten virtual filesystem (`Module.FS`) at `/workspace/<folderName>`, synchronized working directory (`Melder_setCurrentFolder` / `defaultDirectory$`), and verified `Create Strings as file list`, `fileReadable()`, and `Read from file` resolution.
+    - Implemented two-way write-back utility (`writeBackFile`) so changes to TextGrids are written to both MEMFS and the host OS directory handle.
+  - **Headless Commands & Recognizers Registration (`wasm/bridge/praat_bridge.cpp`)**:
+    - Registered `s_soundFileRecognizer` via `Data_recognizeFileType` for WAV, AIFF, FLAC, and MP3 files.
+    - Registered headless commands `Create Strings as file list...`, `Create Strings as folder list...`, and `Strings` query actions.
+    - Registered `TextGrid` query and modification actions (`Get number of tiers`, `Get tier name...`, `Get number of intervals...`, `Get label of interval...`, `Get interval at time...`, `Set interval text...`, `Insert interval tier...`, `Insert point tier...`, `Remove tier...`, `Insert boundary...`, `Remove boundary at time...`).
+    - Registered time queries `praat_TimeFunction_query_init` for `classSound` and `classTextGrid` enabling `Get total duration`, `Get start time`, `Get end time`.
+    - Unified `theCurrentPraatObjects` with bridge object allocation via `register_new_object`, ensuring bridge objects and script objects share the same ID space.
+  - **Script Editor Action Dispatch (`Edit` / `View & Edit`)**:
+    - Registered headless callbacks `WEB_DO_Sound_TextGrid_edit`, `WEB_DO_Sound_edit`, and `WEB_DO_TextGrid_edit` emitting structured `EditorOpenEvent` (`{ action: 'open', editor: 'TextGridEditor'|'SoundEditor', soundId, textGridId }`).
+    - Integrated with `useScriptExecution` to automatically switch active tabs to `TextGridEditor` or `SoundEditor` with matching object selections.
+  - **Non-Blocking Coroutine Pause & Resume Window (`ScriptPauseWindow.tsx`)**:
+    - Hooked `UiPause_begin` / `UiPause_end` (`UiPause.cpp`) into `InterpreterStack::haltAll()` and `resumeFromTop()`, returning `PAUSED` status with dialog title, comments, and button configurations.
+    - Built draggable, floating non-modal `ScriptPauseWindow` floating above the workspace, keeping audio playback, waveform navigation, and TextGrid editing unblocked while paused.
+    - Added `resumeScript(clickedButton)` and `abortScript()` actions to step through batch scripts (e.g. `[Next]`, `[Stop]`) and cleanly interrupt execution.
+  - **TextGrid Editor Quick Save (`Ctrl/Cmd+S`)**:
+    - Updated `handleExportTextGrid` in `TextGridEditor.tsx` to automatically save active TextGrid back to mounted VFS and host filesystem handle with toast notification, falling back to download blob if no folder is mounted.
+  - **Localization & Testing**:
+    - Added all form modal, pause window, quick save, and directory mounting strings to `src/config/locales/en.ts` and `ko.ts` maintaining 100% key parity.
+    - Authored comprehensive test suite `src/phase9.test.ts` (12 tests) covering form parsing, parameter binding, VFS operations, recognizer loading, editor event dispatch, coroutine pause/resume, end-to-end transcription script simulation, and localization parity (81/81 total unit tests passing).
+
+---
+
+## `e79e612` — 2026-11-02
 **`fix(script): resolve WASM binary URL loading, fix New/Open Praat script sync & alerts, and add CHANGELOG.md`**
 
 - **Debugging & Bug Fixes**:
