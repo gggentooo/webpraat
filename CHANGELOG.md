@@ -4,7 +4,47 @@ All notable feature implementations, bug fixes, debuggings, and build/deployment
 
 ---
 
-## `HEAD` — 2026-11-02
+## `HEAD` — 2026-11-03
+**`feat(phase10): implement automated script file synchronization, change tracking & export fallback`**
+
+- **Feature Implementations & Core Infrastructure**:
+  - **VFS Change Tracking & Manifest Diffing (`src/workers/praatWorker.ts`)**:
+    - Implemented in-worker recursive filesystem scanning and snapshot diffing (`scanVfsRecursively`, `takeVfsSnapshot`, `getModifiedVfsEntries`) against Emscripten MEMFS (`Module.FS`).
+    - Captured file paths, sizes, modification timestamps (`mtime`), and 32-bit FNV-1a byte hashes as pre-execution baselines.
+    - Exposed typed RPC methods: `getModifiedVfsFiles(baseDir?: string)`, `readVfsFile(path: string)`, and `resetVfsSnapshot(baseDir?: string)`.
+    - Automatically updated baseline snapshot upon directory mounting (`mountFiles`) so existing files are excluded from change manifests.
+  - **Headless Audio Export Actions in C++ WASM Core (`wasm/bridge/praat_bridge.cpp`)**:
+    - Registered headless Praat audio export actions: `Save as WAV file...`, `Save as 24-bit WAV file...`, `Save as 32-bit WAV file...`, `Save as FLAC file...`, and `Save as AIFF file...` via `Sound_saveAsAudioFile()`.
+    - Enables standard Praat batch commands (such as `selectObject: id; Save as WAV file: path$`) to output directly to the virtual filesystem.
+  - **Automated Host Disk Synchronization (`src/hooks/useScriptExecution.ts`, `src/utils/vfs.ts`)**:
+    - Implemented `writeHostFile()` recursive path resolution and directory creation using the File System Access API (`FileSystemDirectoryHandle`).
+    - On script completion (`COMPLETED`) or suspension (`PAUSED`), automatically traversed detected modified/created files and persisted them directly to the host computer's hard drive without manual user intervention.
+    - Added non-intrusive status confirmations (e.g. `Saved {file} to disk`, `Saved {count} modified files to disk`).
+  - **Interactive Script Step Auto-Sync (`src/components/TextGridEditor/TextGridEditor.tsx`)**:
+    - Registered `activeEditorSaveCallbackAtom` in `TextGridEditor` that auto-commits pending text edits, serializes grid data, and synchronizes with WASM and mounted host folder.
+    - In interactive stepping scripts (e.g., `00_open_for_transcription.praat`), automatically invokes the active editor save callback when the user clicks `[Next]` in `ScriptPauseWindow` before Praat executes `Remove`, completely eliminating annotation data loss.
+  - **Standalone Pure TypeScript ZIP Archive Generator (`src/utils/zip.ts`)**:
+    - Created zero-dependency PKWARE-compliant uncompressed ZIP archive generator with IEEE 802.3 CRC-32 checksum computation (`createZipArchive`, `crc32`).
+  - **Browser Download & Export Fallback Modal (`src/components/ScriptConsole/ScriptExportModal.tsx`)**:
+    - For unmounted contexts or read-only fallbacks (Safari/Firefox): automatically triggers a browser download for single output files, or presents a multi-file export modal with individual download options and `[Download All (.zip)]` archive generation.
+  - **Localization & Unit Testing**:
+    - Added 12 new localization keys to `src/config/locales/en.ts` and `ko.ts` maintaining 100% parity (`fileSavedToDisk`, `filesSavedToDisk`, `fileDownloaded`, `filesReadyForDownload`, `scriptExportTitle`, `scriptExportPrompt`, `downloadZip`, `downloadFile`, `newBadge`, `modifiedBadge`, `close`, `autoSaveStep`).
+    - Created comprehensive test suite `src/phase10.test.ts` (8 tests) covering VFS diffing, script writing/appending, object save commands, mock host directory synchronization, ZIP binary generation, and localization parity (89/89 total unit tests passing).
+
+---
+
+## `f261d61` — 2026-11-03
+**`fix(script): resolve vertical scrollbar in Praat script window top menu bar`**
+
+- **UI & Layout Fixes**:
+  - Fixed top menu bar container height (`h-10`) in `ScriptConsole.tsx` and added `overflow-y-hidden` alongside `overflow-x-auto` to strictly prevent vertical scrollbar rendering.
+  - Standardized all child element heights to fixed `h-7` (28px) with `flex items-center justify-center` across all buttons, filename badge, shortcut indicator, and sample scripts select dropdown.
+  - Reset vertical padding and line-height on native `<select>` element (`py-0 leading-none h-7`) to eliminate cross-platform intrinsic height expansion.
+  - Added defensive `overflow-y-hidden` across editor tab bar (`App.tsx`) and playback toolbars (`SoundEditor.tsx`, `TextGridEditor.tsx`, `PictureWindow.tsx`).
+
+---
+
+## `54388e3` — 2026-11-02
 **`docs: add comprehensive English and Korean user manuals in docs/`**
 
 - **User Documentation**:

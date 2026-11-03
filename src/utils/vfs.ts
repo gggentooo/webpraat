@@ -138,6 +138,38 @@ export async function mountLocalFolder(
 }
 
 /**
+ * Writes raw bytes directly to a host FileSystemDirectoryHandle at a relative path.
+ * Automatically creates intermediate subdirectories as needed.
+ */
+export async function writeHostFile(
+  dirHandle: any,
+  relativePath: string,
+  bytes: Uint8Array
+): Promise<boolean> {
+  if (!dirHandle) return false;
+  try {
+    const cleanRel = relativePath.replace(/\\/g, '/').replace(/^\/+/, '');
+    const parts = cleanRel.split('/').filter(Boolean);
+    if (parts.length === 0) return false;
+
+    let currentDir = dirHandle;
+    for (let i = 0; i < parts.length - 1; i++) {
+      currentDir = await currentDir.getDirectoryHandle(parts[i], { create: true });
+    }
+
+    const fileName = parts[parts.length - 1];
+    const fileHandle = await currentDir.getFileHandle(fileName, { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(bytes);
+    await writable.close();
+    return true;
+  } catch (err) {
+    console.error(`Failed to write host file (${relativePath}):`, err);
+    return false;
+  }
+}
+
+/**
  * Saves a file back to both Praat's worker VFS and host filesystem handle (if mounted).
  */
 export async function writeBackFile(
@@ -157,29 +189,11 @@ export async function writeBackFile(
 
   // 2. If host directory handle is available, write directly to host file
   if (mountedDir?.handle && !mountedDir.readOnly) {
-    try {
-      let relativePath = filePath;
-      if (relativePath.startsWith(mountedDir.path)) {
-        relativePath = relativePath.slice(mountedDir.path.length);
-      }
-      relativePath = relativePath.replace(/^\/+/, '');
-
-      const parts = relativePath.split('/').filter(Boolean);
-      let currentDir = mountedDir.handle;
-
-      for (let i = 0; i < parts.length - 1; i++) {
-        currentDir = await currentDir.getDirectoryHandle(parts[i], { create: true });
-      }
-
-      const fileName = parts[parts.length - 1];
-      const fileHandle = await currentDir.getFileHandle(fileName, { create: true });
-      const writable = await fileHandle.createWritable();
-      await writable.write(bytes);
-      await writable.close();
-      return true;
-    } catch (err) {
-      console.error('Failed to write back to host file handle:', err);
+    let relativePath = filePath;
+    if (relativePath.startsWith(mountedDir.path)) {
+      relativePath = relativePath.slice(mountedDir.path.length);
     }
+    return writeHostFile(mountedDir.handle, relativePath, bytes);
   }
 
   return true;

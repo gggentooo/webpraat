@@ -283,13 +283,13 @@ writeInfoLine: "Drew vowel triangle to Praat Picture!"
         onChange={handleOpenScriptFile}
       />
 
-      <div className="flex h-10 shrink-0 items-center justify-between border-b border-slate-300 bg-slate-100 px-3 text-xs overflow-x-auto">
-        <div className="flex items-center space-x-2 shrink-0">
+      <div className="flex h-14 shrink-0 items-center justify-between border-b border-slate-300 bg-slate-100 px-3 text-xs overflow-x-auto overflow-y-hidden select-none">
+        <div className="flex h-7 items-center space-x-2 shrink-0">
           <button
             type="button"
             onClick={handleRunScript}
             disabled={isScriptRunning}
-            className={`flex items-center rounded border border-blue-600 bg-blue-600 px-3 py-1 font-semibold text-white shadow-xs transition hover:bg-blue-700 active:bg-blue-800 whitespace-nowrap shrink-0 ${
+            className={`flex h-7 items-center justify-center rounded border border-blue-600 bg-blue-600 px-3 text-xs font-semibold text-white shadow-xs transition hover:bg-blue-700 active:bg-blue-800 whitespace-nowrap shrink-0 ${
               isScriptRunning ? 'cursor-not-allowed opacity-60' : ''
             }`}
             title={t.script.shortcutHint}
@@ -307,14 +307,14 @@ writeInfoLine: "Drew vowel triangle to Praat Picture!"
             )}
           </button>
 
-          <span className="text-[11px] text-slate-400 font-mono hidden sm:inline whitespace-nowrap">
+          <span className="h-7 items-center text-[11px] text-slate-400 font-mono hidden sm:inline-flex whitespace-nowrap">
             ({t.script.shortcutHint})
           </span>
 
           <div className="h-4 border-r border-slate-300 mx-1 shrink-0" />
 
           <span
-            className="rounded border border-slate-200 bg-white px-2 py-0.5 font-mono text-[11px] text-slate-700 whitespace-nowrap shrink-0"
+            className="flex h-7 items-center rounded border border-slate-200 bg-white px-2 font-mono text-[11px] text-slate-700 whitespace-nowrap shrink-0"
             title={scriptName}
           >
             {scriptName || t.script.untitledScript}
@@ -323,7 +323,7 @@ writeInfoLine: "Drew vowel triangle to Praat Picture!"
           <button
             type="button"
             onClick={mountFolder}
-            className={`rounded border px-2.5 py-1 text-xs whitespace-nowrap shrink-0 flex items-center space-x-1 ${
+            className={`flex h-7 items-center space-x-1 rounded border px-2.5 text-xs whitespace-nowrap shrink-0 ${
               mountedDir
                 ? 'border-emerald-500 bg-emerald-50 text-emerald-800 font-medium'
                 : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-100'
@@ -337,7 +337,7 @@ writeInfoLine: "Drew vowel triangle to Praat Picture!"
           <button
             type="button"
             onClick={handleNewScript}
-            className="rounded border border-slate-300 bg-white px-2.5 py-1 text-slate-700 hover:bg-slate-50 active:bg-slate-100 whitespace-nowrap shrink-0"
+            className="flex h-7 items-center justify-center rounded border border-slate-300 bg-white px-2.5 text-xs text-slate-700 hover:bg-slate-50 active:bg-slate-100 whitespace-nowrap shrink-0"
           >
             {t.script.newScript}
           </button>
@@ -345,7 +345,7 @@ writeInfoLine: "Drew vowel triangle to Praat Picture!"
           <button
             type="button"
             onClick={handleClearScript}
-            className="rounded border border-slate-300 bg-white px-2.5 py-1 text-slate-700 hover:bg-slate-50 active:bg-slate-100 whitespace-nowrap shrink-0"
+            className="flex h-7 items-center justify-center rounded border border-slate-300 bg-white px-2.5 text-xs text-slate-700 hover:bg-slate-50 active:bg-slate-100 whitespace-nowrap shrink-0"
           >
             {t.script.clear}
           </button>
@@ -353,7 +353,7 @@ writeInfoLine: "Drew vowel triangle to Praat Picture!"
           <button
             type="button"
             onClick={handleClearInfo}
-            className="rounded border border-slate-300 bg-white px-2.5 py-1 text-slate-700 hover:bg-slate-50 active:bg-slate-100 whitespace-nowrap shrink-0"
+            className="flex h-7 items-center justify-center rounded border border-slate-300 bg-white px-2.5 text-xs text-slate-700 hover:bg-slate-50 active:bg-slate-100 whitespace-nowrap shrink-0"
           >
             {t.script.clearInfo}
           </button>
@@ -361,7 +361,7 @@ writeInfoLine: "Drew vowel triangle to Praat Picture!"
           <select
             defaultValue=""
             onChange={handleSelectSample}
-            className="rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 outline-none hover:border-slate-400 cursor-pointer whitespace-nowrap shrink-0"
+            className="flex h-7 items-center rounded border border-slate-300 bg-white px-2 py-0 text-xs leading-none text-slate-700 outline-none hover:border-slate-400 cursor-pointer whitespace-nowrap shrink-0"
           >
             <option value="" disabled>
               {t.script.samples}
@@ -373,11 +373,11 @@ writeInfoLine: "Drew vowel triangle to Praat Picture!"
           </select>
         </div>
 
-        <div className="flex items-center space-x-2 shrink-0">
+        <div className="flex h-7 items-center space-x-2 shrink-0">
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="rounded border border-slate-300 bg-white px-2.5 py-1 text-slate-700 hover:bg-slate-50 active:bg-slate-100 whitespace-nowrap shrink-0"
+            className="flex h-7 items-center justify-center rounded border border-slate-300 bg-white px-2.5 text-xs text-slate-700 hover:bg-slate-50 active:bg-slate-100 whitespace-nowrap shrink-0"
           >
             {t.script.openScript}
           </button>
@@ -385,7 +385,7 @@ writeInfoLine: "Drew vowel triangle to Praat Picture!"
           <button
             type="button"
             onClick={handleSaveScript}
-            className="rounded border border-slate-300 bg-white px-2.5 py-1 text-slate-700 hover:bg-slate-50 active:bg-slate-100 whitespace-nowrap shrink-0"
+            className="flex h-7 items-center justify-center rounded border border-slate-300 bg-white px-2.5 text-xs text-slate-700 hover:bg-slate-50 active:bg-slate-100 whitespace-nowrap shrink-0"
           >
             {t.script.saveScript}
           </button>
@@ -395,7 +395,7 @@ writeInfoLine: "Drew vowel triangle to Praat Picture!"
               type="button"
               onClick={onClose}
               title={t.script.closeTab}
-              className="ml-2 rounded px-2 py-1 text-slate-500 hover:bg-slate-200 hover:text-slate-800 whitespace-nowrap shrink-0"
+              className="flex h-7 items-center justify-center ml-2 rounded px-2 text-xs text-slate-500 hover:bg-slate-200 hover:text-slate-800 whitespace-nowrap shrink-0"
             >
               ✕
             </button>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSetAtom, useAtomValue } from 'jotai';
-import { infoOutputAtom, statusMessageAtom, mountedDirectoryAtom } from '../../store';
+import { infoOutputAtom, statusMessageAtom, mountedDirectoryAtom, activeEditorSaveCallbackAtom } from '../../store';
 import { useI18n } from '../../hooks/useI18n';
 import { useAudio } from '../../hooks/useAudio';
 import { getPraatWorker, downloadBlob } from '../../utils/audio';
@@ -49,6 +49,7 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
   const setInfoOutput = useSetAtom(infoOutputAtom);
   const setStatusMessage = useSetAtom(statusMessageAtom);
   const mountedDir = useAtomValue(mountedDirectoryAtom);
+  const setActiveEditorSaveCallback = useSetAtom(activeEditorSaveCallbackAtom);
 
   // Audio samples & metadata
   const [channels, setChannels] = useState<Float64Array[]>([]);
@@ -527,9 +528,9 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
   };
 
   // Export TextGrid as downloadable file or save to mounted VFS & local folder
-  const handleExportTextGrid = useCallback(async () => {
+  const handleExportTextGrid = useCallback(async (): Promise<boolean> => {
     commitPendingTextEdit();
-    if (!gridDataRef.current) return;
+    if (!gridDataRef.current) return false;
     const serialized = serializeTextGrid(gridDataRef.current);
     const worker = getPraatWorker();
 
@@ -545,16 +546,26 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
         await writeBackFile(worker, mountedDir, `textgrids/${fileName}`, serialized);
         await writeBackFile(worker, mountedDir, fileName, serialized);
         setStatusMessage(`${t.status.textGridSaved}: ${fileName}`);
-        return;
+        return true;
       } catch (err) {
         console.error('Failed to write back to mounted folder:', err);
+        return false;
       }
     }
 
     const blob = new Blob([serialized], { type: 'text/plain;charset=utf-8' });
     downloadBlob(blob, `${textGrid.name}.TextGrid`);
     setStatusMessage(`${t.status.textGridSaved}: ${textGrid.name}.TextGrid`);
+    return true;
   }, [commitPendingTextEdit, textGrid.name, textGrid.id, mountedDir, setStatusMessage, t]);
+
+  // Phase 10: Register auto-save callback for interactive script stepping ([Next] button)
+  useEffect(() => {
+    setActiveEditorSaveCallback(() => handleExportTextGrid());
+    return () => {
+      setActiveEditorSaveCallback(null);
+    };
+  }, [setActiveEditorSaveCallback, handleExportTextGrid]);
 
   // Get current cursor time (from selection start, playhead, or viewport center)
   const getCursorTime = useCallback((): number => {
@@ -1243,7 +1254,7 @@ export const TextGridEditor: React.FC<TextGridEditorProps> = ({
       </div>
 
       {/* 6. Praat Playback & Zoom Bar */}
-      <div className="flex h-8 shrink-0 items-center justify-between border-t border-slate-300 bg-slate-200 px-2 overflow-x-auto">
+      <div className="flex h-8 shrink-0 items-center justify-between border-t border-slate-300 bg-slate-200 px-2 overflow-x-auto overflow-y-hidden">
         {/* Playback buttons */}
         <div className="flex items-center space-x-1.5 font-mono text-[11px] shrink-0">
           <button

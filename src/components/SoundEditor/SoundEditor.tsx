@@ -359,7 +359,7 @@ export const SoundEditor: React.FC<SoundEditorProps> = ({ sound, onClose }) => {
       </div>
 
       {/* 4. Praat Playback & Zoom Bar */}
-      <div className="flex h-8 shrink-0 items-center justify-between border-t border-slate-300 bg-slate-200 px-2 overflow-x-auto">
+      <div className="flex h-8 shrink-0 items-center justify-between border-t border-slate-300 bg-slate-200 px-2 overflow-x-auto overflow-y-hidden">
         {/* Left: Praat-style 3 Playback Buttons */}
         <div className="flex items-center space-x-1.5 font-mono text-[11px] shrink-0">
           {/* 1. Visible Window Play button */}

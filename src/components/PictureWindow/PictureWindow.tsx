@@ -200,7 +200,7 @@ export const PictureWindow: React.FC = () => {
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5 overflow-x-auto shrink-0">
+        <div className="flex items-center gap-1.5 overflow-x-auto overflow-y-hidden shrink-0">
           <button
             type="button"
             onClick={handleDrawInnerBox}

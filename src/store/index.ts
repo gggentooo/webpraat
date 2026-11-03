@@ -13,7 +13,7 @@ import type {
   PictureViewport,
   PicturePenSettings,
 } from '../types/praat';
-import type { ScriptFormInfo, ScriptPauseData } from '../types/wasm';
+import type { ScriptFormInfo, ScriptPauseData, ModifiedVfsFile } from '../types/wasm';
 import { defaultLocale, getTranslation, type SupportedLocale } from '../config/i18n';
 
 // Phase 9 Interactive Scripting & Directory Mounting Interfaces
@@ -55,6 +55,11 @@ export const workspaceHydratedAtom = atom<boolean>(false);
 export const mountedDirectoryAtom = atom<MountedDirectory | null>(null);
 export const scriptFormModalAtom = atom<ScriptFormModalState | null>(null);
 export const scriptPauseStateAtom = atom<ScriptPauseState | null>(null);
+
+// Phase 10 Automated File Synchronization & Change Tracking Atoms
+export const scriptExportModalAtom = atom<ModifiedVfsFile[] | null>(null);
+export type ActiveEditorSaveCallback = () => Promise<boolean>;
+export const activeEditorSaveCallbackAtom = atom<ActiveEditorSaveCallback | null>(null);
 
 // Praat Picture Window State Atoms (Phase 7)
 export const pictureCommandsAtom = atom<PictureCommand[]>([]);

@@ -377,6 +377,36 @@ DO
     MODIFY_EACH_END
 }
 
+FORM_SAVE (SAVE_Sound_saveAsWavFile, U"Save as WAV file", nullptr, U"wav") {
+    SAVE_ONE (Sound, U"save the selected Sound object to the WAV file")
+        Sound_saveAsAudioFile (me, file, Melder_WAV, 16);
+    SAVE_ONE_END
+}
+
+FORM_SAVE (SAVE_Sound_saveAs24BitWavFile, U"Save as 24-bit WAV file", nullptr, U"wav") {
+    SAVE_ONE (Sound, U"save the selected Sound object to the 24-bit WAV file")
+        Sound_saveAsAudioFile (me, file, Melder_WAV, 24);
+    SAVE_ONE_END
+}
+
+FORM_SAVE (SAVE_Sound_saveAs32BitWavFile, U"Save as 32-bit WAV file", nullptr, U"wav") {
+    SAVE_ONE (Sound, U"save the selected Sound object to the 32-bit WAV file")
+        Sound_saveAsAudioFile (me, file, Melder_WAV, 32);
+    SAVE_ONE_END
+}
+
+FORM_SAVE (SAVE_Sound_saveAsFlacFile, U"Save as FLAC file", nullptr, U"flac") {
+    SAVE_ONE (Sound, U"save the selected Sound object to the FLAC file")
+        Sound_saveAsAudioFile (me, file, Melder_FLAC, 16);
+    SAVE_ONE_END
+}
+
+FORM_SAVE (SAVE_Sound_saveAsAiffFile, U"Save as AIFF file", nullptr, U"aiff") {
+    SAVE_ONE (Sound, U"save the selected Sound object to the AIFF file")
+        Sound_saveAsAudioFile (me, file, Melder_AIFF, 16);
+    SAVE_ONE_END
+}
+
 extern "C" {
 
 int praat_bridge_init(void) {
@@ -452,6 +482,13 @@ int praat_bridge_init(void) {
         // Register Sound & TextGrid time queries (duration, start, end)
         praat_TimeFunction_query_init (classSound);
         praat_TimeFunction_query_init (classTextGrid);
+
+        // Register Sound audio file saving actions
+        praat_addAction1 (classSound, 0, U"Save as WAV file... || Write to WAV file...", nullptr, 0, SAVE_Sound_saveAsWavFile);
+        praat_addAction1 (classSound, 0, U"Save as 24-bit WAV file...", nullptr, 0, SAVE_Sound_saveAs24BitWavFile);
+        praat_addAction1 (classSound, 0, U"Save as 32-bit WAV file...", nullptr, 0, SAVE_Sound_saveAs32BitWavFile);
+        praat_addAction1 (classSound, 0, U"Save as FLAC file... || Write to FLAC file...", nullptr, 0, SAVE_Sound_saveAsFlacFile);
+        praat_addAction1 (classSound, 0, U"Save as AIFF file... || Write to AIFF file...", nullptr, 0, SAVE_Sound_saveAsAiffFile);
 
         // Register Edit / View & Edit actions
         praat_addAction2 (classSound, 1, classTextGrid, 1, U"View & Edit || Edit", nullptr, GuiMenu_ATTRACTIVE, WEB_DO_Sound_TextGrid_edit);

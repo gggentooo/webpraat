@@ -411,6 +411,20 @@ export const ko: LocaleDictionary = {
     scriptPaused: '스크립트 실행 일시 중단',
     scriptResumed: '스크립트 실행 재개',
     scriptAborted: '사용자에 의해 스크립트 실행이 중단되었습니다',
+
+    // Phase 10 File Sync & Export
+    fileSavedToDisk: '{file} 파일을 디스크에 저장했습니다',
+    filesSavedToDisk: '수정된 {count}개 파일을 디스크에 저장했습니다',
+    fileDownloaded: '{file} 파일을 다운로드했습니다',
+    filesReadyForDownload: '{count}개 파일 내보내기 준비 완료',
+    scriptExportTitle: '스크립트 출력 파일 내보내기',
+    scriptExportPrompt: '스크립트 실행 중 다음 파일들이 생성되거나 수정되었습니다:',
+    downloadZip: '전체 다운로드 (.zip)',
+    downloadFile: '다운로드',
+    newBadge: '신규',
+    modifiedBadge: '수정됨',
+    close: '닫기',
+    autoSaveStep: '다음 파일로 이동하기 전에 자동 저장되었습니다',
   },
 
   // TextGrid Editor Menu Bar & Operations (Phase 8)

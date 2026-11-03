@@ -143,6 +143,34 @@ Agents should work strictly in the following sequence. Do not jump ahead until e
    - Add all script form, pause window, and directory mounting strings to `en.ts` and `ko.ts` with 100% key parity, plus unit/integration tests covering `form` variable binding, VFS directory mounting, `Edit` dispatch, and `beginPause`/`endPause` loop resumption.
 7. *Acceptance Check:* User can mount a local folder containing `.wav` files and a `textgrids/` subfolder, run an interactive batch-annotation script (such as `00_open_for_transcription.praat`), submit the initial `form` dialog, annotate each automatically opened `Sound + TextGrid` pair in `TextGridEditor`, save in place with `Ctrl/Cmd+S`, step through files via the floating `[Next]` / `[Stop]` pause window, and re-run with `skip_done` accurately skipping already-labeled TextGrids.
 
+### Phase 10: Automated Script File Synchronization, Change Tracking & Export Fallback
+1. **VFS Change Tracking & Manifest Diffing (`praatWorker.ts` / `Module.FS`):**
+   - Implement a snapshot and diffing mechanism for the virtual filesystem (`/workspace/<folderName>`) within the Web Worker.
+   - Capture a pre-execution manifest (file paths, sizes, and modification timestamps `mtime`) of all VFS files before running a script.
+   - Post-execution (on script completion `COMPLETED` or coroutine suspension `PAUSED`), traverse `Module.FS` to detect all modified files (`mtime` changed, size changed) and newly created files.
+   - Expose a typed RPC method `getModifiedVfsFiles(baseDir: string): Promise<Array<{ path: string; data: Uint8Array; isNew: boolean }>>`.
+2. **Automated Host Two-Way Disk Synchronization (`useScriptExecution.ts` + `vfs.ts`):**
+   - Automatically query `getModifiedVfsFiles()` whenever a Praat script completes or pauses.
+   - When a local directory is mounted with read/write access (`mountedDir.handle` present and `!mountedDir.readOnly`):
+     - Iterate through detected modified/created files and write them directly back to the physical disk using `writeBackFile()` and `FileSystemFileHandle.createWritable()`.
+     - Automatically create and mirror nested subdirectories on the host (e.g., `textgrids/*.TextGrid`, `reports/*.csv`, `output/*.wav`).
+     - Display a non-intrusive status confirmation (e.g., *"Saved N modified files to disk"*).
+3. **Interactive Script Step Auto-Sync (`ScriptPauseWindow` / `TextGridEditor`):**
+   - In interactive stepping scripts (such as `00_open_for_transcription.praat`), automatically serialize and write back any uncommitted changes from the active `TextGridEditor` or `SoundEditor` when the user clicks `[Next]` before execution resumes and Praat executes `Remove`, preventing annotation data loss.
+4. **Browser Download & Export Fallback (Read-Only / Unmounted Contexts):**
+   - When running without a mounted local folder, or under read-only fallback (Safari/Firefox `<input type="file" webkitdirectory>`):
+     - Detect all files generated or altered during script execution (`writeFile`, `appendFile`, `Save as text file:`, `Save as WAV file:`).
+     - Automatically trigger a single-file browser download (`downloadBlob`) if one file was created/modified.
+     - For batch scripts producing multiple files, present a non-modal export prompt allowing the user to download files individually or as a `.zip` bundle.
+5. **Localization & Integration Testing:**
+   - Add all file sync, auto-save status, and fallback download strings to `en.ts` and `ko.ts` maintaining 100% key parity.
+   - Author a comprehensive test suite covering:
+     - Script writing to an existing file (`writeFileLine:`, `appendFileLine:`).
+     - Object save actions to relative and nested paths (`Save as text file:`, `Save as WAV file:`).
+     - Host handle write-back verification using mock `FileSystemDirectoryHandle`.
+     - Fallback download generation when write permissions are absent.
+6. *Acceptance Check:* User can mount a local directory containing `.wav` and `.TextGrid` files, run a batch script that modifies existing files (e.g. `Set interval text:`, `Save as text file:`, `appendFileLine:`) or creates new analysis outputs, and verify that the actual files on the host computer's hard drive are updated in place with the modified contents without manual save intervention.
+
 ---
 
 ## 3. Build Instructions

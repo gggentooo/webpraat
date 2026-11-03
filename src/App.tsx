@@ -13,6 +13,7 @@ import {
   isProcessingAtom,
   workspaceHydratedAtom,
   scriptFormModalAtom,
+  scriptExportModalAtom,
 } from './store';
 import { useI18n } from './hooks/useI18n';
 import { useScriptExecution } from './hooks/useScriptExecution';
@@ -23,6 +24,7 @@ import { ModalDialog } from './components/shared/ModalDialog';
 import { SoundRecorderModal } from './components/SoundRecorder/SoundRecorderModal';
 import { ScriptFormModal } from './components/ScriptConsole/ScriptFormModal';
 import { ScriptPauseWindow } from './components/ScriptConsole/ScriptPauseWindow';
+import { ScriptExportModal } from './components/ScriptConsole/ScriptExportModal';
 import { SoundEditor } from './components/SoundEditor/SoundEditor';
 import { TextGridEditor } from './components/TextGridEditor/TextGridEditor';
 import { ScriptConsole } from './components/ScriptConsole/ScriptConsole';
@@ -44,6 +46,7 @@ export default function App() {
   const isProcessing = useAtomValue(isProcessingAtom);
   const [hydrated, setHydrated] = useAtom(workspaceHydratedAtom);
   const [scriptFormModal, setScriptFormModal] = useAtom(scriptFormModalAtom);
+  const [scriptExportModal, setScriptExportModal] = useAtom(scriptExportModalAtom);
 
   const { runScript, resumeScript, abortScript, scriptPauseState } = useScriptExecution();
 
@@ -132,7 +135,7 @@ export default function App() {
           {/* Right Pane: Workspace / Editor / Praat Picture */}
           <main className="flex flex-1 flex-col overflow-hidden bg-slate-100 min-w-0">
           {/* Editor Header / Tab bar */}
-          <div className="flex h-7 shrink-0 items-center border-b border-slate-300 bg-slate-200 px-2 text-xs font-medium overflow-x-auto">
+          <div className="flex h-7 shrink-0 items-center border-b border-slate-300 bg-slate-200 px-2 text-xs font-medium overflow-x-auto overflow-y-hidden">
             <button
               type="button"
               onClick={() => setActiveTab('picture')}
@@ -286,6 +289,12 @@ export default function App() {
           onAbort={() => {
             void abortScript();
           }}
+        />
+      )}
+      {scriptExportModal && (
+        <ScriptExportModal
+          files={scriptExportModal}
+          onClose={() => setScriptExportModal(null)}
         />
       )}
       </div>

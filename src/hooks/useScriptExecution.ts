@@ -3,7 +3,7 @@
  * and dispatching editor events across WebPraat components.
  */
 
-import { useAtom, useSetAtom } from 'jotai';
+import { useAtom, useSetAtom, useAtomValue } from 'jotai';
 import {
   isScriptRunningAtom,
   statusMessageAtom,
@@ -19,10 +19,12 @@ import {
   pictureCommandsAtom,
   pictureViewportAtom,
   picturePenAtom,
+  scriptExportModalAtom,
+  activeEditorSaveCallbackAtom,
 } from '../store';
 import { useI18n } from './useI18n';
-import { getPraatWorker } from '../utils/audio';
-import { mountLocalFolder } from '../utils/vfs';
+import { getPraatWorker, downloadBlob } from '../utils/audio';
+import { mountLocalFolder, writeHostFile } from '../utils/vfs';
 import { parsePraatPictureScriptCommands } from '../utils/pictureRenderer';
 import type { ScriptExecutionResult } from '../types/wasm';
 
@@ -42,6 +44,8 @@ export function useScriptExecution() {
   const setPictureCommands = useSetAtom(pictureCommandsAtom);
   const [pictureViewport, setPictureViewport] = useAtom(pictureViewportAtom);
   const [picturePen, setPicturePen] = useAtom(picturePenAtom);
+  const setScriptExportModal = useSetAtom(scriptExportModalAtom);
+  const activeEditorSaveCallback = useAtomValue(activeEditorSaveCallbackAtom);
 
   const syncObjects = async (worker: any) => {
     try {
@@ -68,6 +72,47 @@ export function useScriptExecution() {
       }
     } catch (err) {
       console.warn('Failed to sync Praat objects:', err);
+    }
+  };
+
+  const syncModifiedFiles = async (worker: any) => {
+    try {
+      const baseDir = mountedDir ? mountedDir.path : '/workspace';
+      const modifiedFiles = await worker.getModifiedVfsFiles(baseDir);
+      if (!modifiedFiles || modifiedFiles.length === 0) return;
+
+      if (mountedDir?.handle && !mountedDir.readOnly) {
+        let savedCount = 0;
+        for (const file of modifiedFiles) {
+          const ok = await writeHostFile(mountedDir.handle, file.path, file.data);
+          if (ok) savedCount++;
+        }
+        await worker.resetVfsSnapshot(baseDir);
+
+        if (savedCount === 1) {
+          const msg = t.script.fileSavedToDisk.replace('{file}', modifiedFiles[0].path);
+          setStatusMessage(msg);
+        } else if (savedCount > 1) {
+          const msg = t.script.filesSavedToDisk.replace('{count}', String(savedCount));
+          setStatusMessage(msg);
+        }
+      } else {
+        if (modifiedFiles.length === 1) {
+          const single = modifiedFiles[0];
+          const blob = new Blob([single.data as BlobPart], { type: 'application/octet-stream' });
+          const fileName = single.path.split('/').pop() || 'output';
+          downloadBlob(blob, fileName);
+          setStatusMessage(t.script.fileDownloaded.replace('{file}', fileName));
+          await worker.resetVfsSnapshot(baseDir);
+        } else {
+          setScriptExportModal(modifiedFiles);
+          setStatusMessage(
+            t.script.filesReadyForDownload.replace('{count}', String(modifiedFiles.length))
+          );
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to sync modified VFS files:', err);
     }
   };
 
@@ -112,7 +157,10 @@ export function useScriptExecution() {
       console.warn('Failed to check editor open event:', err);
     }
 
-    // 4. Update status & pause state
+    // 4. Synchronize modified/created VFS files with host disk or browser export fallback
+    await syncModifiedFiles(worker);
+
+    // 5. Update status & pause state
     if (res.status === 'PAUSED' && res.pauseData) {
       setScriptPauseState({ data: res.pauseData, scriptText: '' });
       setStatusMessage(t.script.scriptPaused);
@@ -199,6 +247,16 @@ export function useScriptExecution() {
     const worker = getPraatWorker();
     setIsScriptRunning(true);
     setStatusMessage(t.script.running);
+
+    // Phase 10: Auto-save active editor changes before script resumes and removes objects
+    if (activeEditorSaveCallback) {
+      try {
+        await activeEditorSaveCallback();
+        setStatusMessage(t.script.autoSaveStep);
+      } catch (err) {
+        console.warn('Auto-save step failed before resuming script:', err);
+      }
+    }
 
     try {
       const res = await worker.resumeScript(clickedButton);

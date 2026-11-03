@@ -409,6 +409,20 @@ export const en = {
     scriptPaused: 'Script paused',
     scriptResumed: 'Script resumed',
     scriptAborted: 'Script aborted by user',
+
+    // Phase 10 File Sync & Export
+    fileSavedToDisk: 'Saved {file} to disk',
+    filesSavedToDisk: 'Saved {count} modified files to disk',
+    fileDownloaded: 'Downloaded {file}',
+    filesReadyForDownload: '{count} files ready for export',
+    scriptExportTitle: 'Export Script Outputs',
+    scriptExportPrompt: 'The following files were generated or modified during script execution:',
+    downloadZip: 'Download All (.zip)',
+    downloadFile: 'Download',
+    newBadge: 'New',
+    modifiedBadge: 'Modified',
+    close: 'Close',
+    autoSaveStep: 'Auto-saved before continuing to next file',
   },
 
   // TextGrid Editor Menu Bar & Operations (Phase 8)

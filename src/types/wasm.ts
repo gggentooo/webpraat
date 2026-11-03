@@ -33,6 +33,14 @@ export interface ScriptExecutionResult {
   pauseData?: ScriptPauseData;
 }
 
+export interface ModifiedVfsFile {
+  path: string;
+  vfsFullPath: string;
+  data: Uint8Array;
+  isNew: boolean;
+  size: number;
+}
+
 export interface EditorOpenEvent {
   action: 'open';
   editor: 'TextGridEditor' | 'SoundEditor';
@@ -292,7 +300,10 @@ export interface PraatWorkerApi {
   getLastEditorEvent(): Promise<EditorOpenEvent | null>;
   setCurrentDirectory(path: string): Promise<boolean>;
   writeVfsFile(path: string, content: string | Uint8Array): Promise<boolean>;
+  readVfsFile(path: string): Promise<Uint8Array | null>;
   mountFiles(baseDir: string, files: Array<{ path: string; data: Uint8Array }>): Promise<{ mountedCount: number }>;
+  getModifiedVfsFiles(baseDir?: string): Promise<ModifiedVfsFile[]>;
+  resetVfsSnapshot(baseDir?: string): Promise<void>;
   getInfoOutput(): Promise<string>;
   clearInfoOutput(): Promise<void>;
   getObjectsJson(): Promise<Array<{ id: number; className: string; name: string; duration?: number; sampleRate?: number; numChannels?: number; numSamples?: number }>>;
