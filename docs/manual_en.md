@@ -1,7 +1,6 @@
 # WebPraat User Manual
 
 > **A Practical Guide to Acoustic Phonetics and Speech Analysis in WebPraat**  
-> *Target Audience: Linguistics and Phonetics Students*
 
 ---
 

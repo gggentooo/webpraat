@@ -1,6 +1,5 @@
 # Praat Technical Architecture
 
-> **Source analyzed:** `~/dev/praat` (GitHub mirror, ~2026-05 HEAD)  
 > **Language:** C++17 / C99  
 > **License:** GNU GPL v3 or later  
 > **Authors:** Paul Boersma, David Weenink (University of Amsterdam, Institute of Phonetics Sciences)

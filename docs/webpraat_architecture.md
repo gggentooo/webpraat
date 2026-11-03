@@ -3,7 +3,6 @@
 > **Document Version:** 1.0.0  
 > **Target System:** WebPraat (Browser-native web port of Praat)  
 > **Source Base:** Upstream Praat (C++17 / C99) + Modern Web Architecture (TypeScript / React 19 / WebAssembly)  
-> **Location:** `/Users/leehk/dev/webpraat/webpraat_architecture.md`  
 
 ---
 

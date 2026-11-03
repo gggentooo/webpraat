@@ -1,8 +1,4 @@
 # WebPraat – Web Port Development Plan
-
-> **Goal:** A faithful, feature-rich web port of Praat that runs entirely in the browser, with no server-side processing for core analysis, and a modern, accessible UI.  
-> **Based on:** architectural analysis of `~/dev/praat` (November 2026)
-
 ---
 
 ## Table of Contents
